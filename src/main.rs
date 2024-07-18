@@ -47,7 +47,9 @@ fn main() {
     for (file, pos, original_line, new_line) in mutations {
         change_line_content(&file, pos + 1, &new_line).expect("Error applying mutation");
         if run_tests(path_dst) {
-            println!("Mutation test failed");
+            println!("Mutation test failed at {:?} line {:?}", file, pos + 1);
+            println!("+ {}", original_line);
+            println!(" - {}", new_line);
             return;
         }
         change_line_content(&file, pos + 1, &original_line).expect("Error reverting content");
