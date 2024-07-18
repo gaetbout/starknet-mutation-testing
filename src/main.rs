@@ -13,7 +13,12 @@ fn main() {
     // Assert Scarb toml file
     let binding = path.join("temp");
     let path_dst = binding.as_path();
-    copy_dir_all(path.join(PATH).as_path(), path_dst).expect("Couldn't copy test data");
+    copy_dir_all(
+        path.join(PATH).as_path(),
+        path_dst,
+        &["cairo", "toml", "lock"],
+    )
+    .expect("Couldn't copy test data");
 
     // First ensure all tests pass
     // Run the scarb test command
@@ -74,22 +79,29 @@ fn change_line_content(file_path: &Path, line_number: usize, new_content: &str) 
     Ok(())
 }
 
-fn copy_dir_all(src: &Path, dst: &Path) -> io::Result<()> {
+fn copy_dir_all(src: &Path, dst: &Path, file_extensions: &[&str]) -> io::Result<()> {
     if !dst.exists() {
         fs::create_dir(dst)?;
     }
+
     for entry in fs::read_dir(src)? {
-        // TODO ignore the target folder
-        // TODO ignore .gitignore (basically just copy cairo, toml and lock file)
         let entry = entry?;
         let path = entry.path();
-        let dest_path = dst.join(path.file_name().unwrap());
+
         if path.is_dir() {
-            copy_dir_all(&path, &dest_path)?;
+            let dest_path = dst.join(path.file_name().unwrap());
+            copy_dir_all(&path, &dest_path, file_extensions)?;
         } else {
-            fs::copy(&path, &dest_path)?;
+            // Check if the file's extension matches any in file_extensions
+            if let Some(ext) = path.extension() {
+                if file_extensions.iter().any(|&e| ext == e) {
+                    let dest_file = dst.join(path.file_name().unwrap());
+                    fs::copy(&path, &dest_file)?;
+                }
+            }
         }
     }
+
     Ok(())
 }
 
