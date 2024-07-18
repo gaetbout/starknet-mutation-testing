@@ -1,0 +1,10 @@
+[package]
+name = "starknet-mutation-testing"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+
+
+[alias]
+dev = "cargo run --package starknet-mutation-testing --bin starknet-mutation-testing"
