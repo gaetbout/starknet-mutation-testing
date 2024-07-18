@@ -9,7 +9,8 @@ use std::{
 enum Mutation {
     Equal,
     NotEqual,
-    // GreaterThan,
+    // TODO Some can lead to multiple modifications
+    // GreaterThan, // e.g > => >= or <
     // GreaterThanOrEqual,
     // LessThan,
     // LessThanOrEqual,
@@ -35,46 +36,35 @@ fn main() {
     let files = collect_files_with_extension(path_dst, "cairo").expect("Couldn't collect files");
 
     // TODO This could be a map Mutation => data
-    let mut mutations = Vec::new();
-
-    // Print the collected files
-    for file in &files {
-        // Read the content of the file into a string
-        let content = fs::read_to_string(&file).expect("Error while reading the file");
-        // Look for mutation
-        for (pos, line) in content.lines().into_iter().enumerate() {
-            let line = line.to_string();
-            if line.contains("==") {
-                mutations.push((file, pos, line.clone(), Mutation::Equal));
-            }
-
-            if line.contains("!=") {
-                mutations.push((file, pos, line.clone(), Mutation::NotEqual));
-            }
-        }
-    }
-
+    let mutations = collect_mutations(files);
     println!("Mutations found: {}", mutations.len());
 
+    let mut failures = Vec::new();
     // Mutate the file
     for (file, pos, original_line, mutation) in mutations {
         let (new_line, error) = match mutation {
             Mutation::Equal => (original_line.replace("==", "!="), "'==' updated to '!='"),
             Mutation::NotEqual => (original_line.replace("!=", "=="), "'!=' updated to '=='"),
         };
+
         change_line_content(&file, pos + 1, &new_line).expect("Error applying mutation");
         if run_tests(path_dst) {
-            println!("Mutation test failed:");
-            println!("\tMutation applied {}", error);
-            println!("\tFile {:?} line {:?}", file, pos + 1);
-            fs::remove_dir_all(path_dst).expect("Error while removing temp folder");
-            return;
+            failures.push((error, file.clone(), pos));
         }
         change_line_content(&file, pos + 1, &original_line).expect("Error reverting content");
     }
 
     fs::remove_dir_all(path_dst).expect("Error while removing temp folder");
-    println!("All mutation tests passed");
+
+    if failures.len() > 0 {
+        println!("Found {} failing mutation(s):", failures.len());
+        for (error, file, pos) in failures {
+            println!("\tMutation applied {}", error);
+            println!("\tFile {:?} line {:?}\n", file, pos + 1);
+        }
+    } else {
+        println!("All mutation tests passed");
+    }
 }
 
 fn change_line_content(file_path: &Path, line_number: usize, new_content: &str) -> io::Result<()> {
@@ -105,6 +95,28 @@ fn change_line_content(file_path: &Path, line_number: usize, new_content: &str) 
     }
 
     Ok(())
+}
+
+fn collect_mutations(files: Vec<PathBuf>) -> Vec<(PathBuf, usize, String, Mutation)> {
+    let mut mutations = Vec::new();
+
+    // Print the collected files
+    for file in &files {
+        // Read the content of the file into a string
+        let content = fs::read_to_string(&file).expect("Error while reading the file");
+        // Look for mutation
+        for (pos, line) in content.lines().into_iter().enumerate() {
+            let line = line.to_string();
+            if line.contains("==") {
+                mutations.push((file.clone(), pos, line.clone(), Mutation::Equal));
+            }
+
+            if line.contains("!=") {
+                mutations.push((file.clone(), pos, line.clone(), Mutation::NotEqual));
+            }
+        }
+    }
+    mutations
 }
 
 fn copy_dir_all(src: &Path, dst: &Path, file_extensions: &[&str]) -> io::Result<()> {
