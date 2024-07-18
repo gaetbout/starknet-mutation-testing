@@ -1,11 +1,19 @@
 use std::{
-    env, fs,
-    fs::File,
-    io,
-    io::{BufRead, BufReader, Write},
+    env,
+    fs::{self, File},
+    io::{self, BufRead, BufReader, Write},
     path::{Path, PathBuf},
     process::Command,
 };
+
+enum Mutation {
+    Equal,
+    NotEqual,
+    // GreaterThan,
+    // GreaterThanOrEqual,
+    // LessThan,
+    // LessThanOrEqual,
+}
 
 const PATH: &str = "test_data";
 fn main() {
@@ -26,6 +34,7 @@ fn main() {
 
     let files = collect_files_with_extension(path_dst, "cairo").expect("Couldn't collect files");
 
+    // TODO This could be a map Mutation => data
     let mut mutations = Vec::new();
 
     // Print the collected files
@@ -36,27 +45,36 @@ fn main() {
         for (pos, line) in content.lines().into_iter().enumerate() {
             let line = line.to_string();
             if line.contains("==") {
-                // TODO This can be an enum?
-                mutations.push((file, pos, line.clone(), line.replace("==", "!=")));
+                mutations.push((file, pos, line.clone(), Mutation::Equal));
+            }
+
+            if line.contains("!=") {
+                mutations.push((file, pos, line.clone(), Mutation::NotEqual));
             }
         }
     }
 
     println!("Mutations found: {}", mutations.len());
+
     // Mutate the file
-    for (file, pos, original_line, new_line) in mutations {
+    for (file, pos, original_line, mutation) in mutations {
+        let (new_line, error) = match mutation {
+            Mutation::Equal => (original_line.replace("==", "!="), "'==' updated to '!='"),
+            Mutation::NotEqual => (original_line.replace("!=", "=="), "'!=' updated to '=='"),
+        };
         change_line_content(&file, pos + 1, &new_line).expect("Error applying mutation");
         if run_tests(path_dst) {
-            println!("Mutation test failed at {:?} line {:?}", file, pos + 1);
-            println!("+ {}", original_line);
-            println!("- {}", new_line);
+            println!("Mutation test failed:");
+            println!("\tMutation applied {}", error);
+            println!("\tFile {:?} line {:?}", file, pos + 1);
+            fs::remove_dir_all(path_dst).expect("Error while removing temp folder");
             return;
         }
         change_line_content(&file, pos + 1, &original_line).expect("Error reverting content");
     }
 
+    fs::remove_dir_all(path_dst).expect("Error while removing temp folder");
     println!("All mutation tests passed");
-    // TODO Cleanup temp folder
 }
 
 fn change_line_content(file_path: &Path, line_number: usize, new_content: &str) -> io::Result<()> {
@@ -143,6 +161,7 @@ fn collect_files_with_extension(
     Ok(files)
 }
 
+// TODO Do a TestRunner to support other tests frameworks
 fn run_tests(path_dst: &Path) -> bool {
     let output = Command::new("scarb")
         .arg("test")
@@ -150,12 +169,14 @@ fn run_tests(path_dst: &Path) -> bool {
         .output()
         .expect("Failed to execute command");
 
-    // if output.status.success() {
-    //     let stdout = String::from_utf8_lossy(&output.stdout);
-    //     println!("Command output: {}", stdout);
-    // } else {
-    //     let stderr = String::from_utf8_lossy(&output.stderr);
-    //     println!("Command failed with error: {}", stderr);
-    // }
+    if output.status.success() {
+        // let stdout = String::from_utf8_lossy(&output.stdout);
+        // println!("Command output: {}", stdout);
+    } else {
+        // let stderr = String::from_utf8_lossy(&output.stderr);
+        // let stdout = String::from_utf8_lossy(&output.stdout);
+        // // println!("{}", stdout); // TODO Parse the failing tests
+        // println!("Command failed with error: {}", stderr);
+    }
     output.status.success()
 }
