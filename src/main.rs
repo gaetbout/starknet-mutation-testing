@@ -22,30 +22,38 @@ fn main() {
 
     // First ensure all tests pass
     // Run the scarb test command
-    run_tests(path_dst);
+    assert!(run_tests(path_dst), "Pre state tests failed");
 
     let files = collect_files_with_extension(path_dst, "cairo").expect("Couldn't collect files");
 
+    let mut mutations = Vec::new();
+
     // Print the collected files
     for file in &files {
-        println!("File {}", file.display());
         // Read the content of the file into a string
         let content = fs::read_to_string(&file).expect("Error while reading the file");
         // Look for mutation
-        let mut mutations = Vec::new();
         for (pos, line) in content.lines().into_iter().enumerate() {
+            let line = line.to_string();
             if line.contains("==") {
-                mutations.push((pos, line.replace("==", "!=")));
+                // TODO This can be an enum?
+                mutations.push((file, pos, line.clone(), line.replace("==", "!=")));
             }
         }
-        // Mutate the file
-        for (pos, line) in mutations {
-            change_line_content(&file, pos + 1, &line).expect("Error while changing content");
-        }
-
-        run_tests(path_dst);
     }
 
+    println!("Mutations found: {}", mutations.len());
+    // Mutate the file
+    for (file, pos, original_line, new_line) in mutations {
+        change_line_content(&file, pos + 1, &new_line).expect("Error applying mutation");
+        if run_tests(path_dst) {
+            println!("Mutation test failed");
+            return;
+        }
+        change_line_content(&file, pos + 1, &original_line).expect("Error reverting content");
+    }
+
+    println!("All mutation tests passed");
     // TODO Cleanup temp folder
 }
 
@@ -140,12 +148,12 @@ fn run_tests(path_dst: &Path) -> bool {
         .output()
         .expect("Failed to execute command");
 
-    if output.status.success() {
-        let stdout = String::from_utf8_lossy(&output.stdout);
-        println!("Command output: {}", stdout);
-    } else {
-        let stderr = String::from_utf8_lossy(&output.stderr);
-        println!("Command failed with error: {}", stderr);
-    }
+    // if output.status.success() {
+    //     let stdout = String::from_utf8_lossy(&output.stdout);
+    //     println!("Command output: {}", stdout);
+    // } else {
+    //     let stderr = String::from_utf8_lossy(&output.stderr);
+    //     println!("Command failed with error: {}", stderr);
+    // }
     output.status.success()
 }

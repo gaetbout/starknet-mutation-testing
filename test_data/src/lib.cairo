@@ -5,12 +5,24 @@ fn simple_equal() -> bool {
     a == b
 }
 
+
+fn simple_equal_copy() -> bool {
+    let a = 1;
+    let b = 1;
+    a == b
+}
+
 #[cfg(test)]
 mod tests {
-    use super::simple_equal;
+    use super::{simple_equal,simple_equal_copy};
 
     #[test]
-    fn simple_test() {
+    fn test_simple_test() {
         assert(simple_equal(), 'pass');
+    }
+
+    #[test]
+    fn test_simple_equal_copy() {
+        assert(simple_equal_copy(), 'pass');
     }
 }
