@@ -16,14 +16,19 @@ enum Mutation {
     // LessThanOrEqual,
 }
 
-const PATH: &str = "test_data";
+// TODO Test_data should contain way more folders with a test for each
+const PATH: &str = "test_data/equal";
 fn main() {
+    do_stuff(PATH, "main")
+}
+
+fn do_stuff(folder_path: &str, subfolder: &str) {
     let path = env::current_dir().expect("Couldn't access pwd");
     // Assert Scarb toml file
-    let binding = path.join("temp");
+    let binding = path.join("temp").join(subfolder);
     let path_dst = binding.as_path();
     copy_dir_all(
-        path.join(PATH).as_path(),
+        path.join(folder_path).as_path(),
         path_dst,
         &["cairo", "toml", "lock"],
     )
@@ -36,6 +41,8 @@ fn main() {
     let files = collect_files_with_extension(path_dst, "cairo").expect("Couldn't collect files");
 
     // TODO This could be a map Mutation => data
+    // TODO And could start a thread for each mutation type
+    // Test each mutant in parallel.
     let mutations = collect_mutations(files);
     println!("Mutations found: {}", mutations.len());
 
@@ -66,7 +73,6 @@ fn main() {
         println!("All mutation tests passed");
     }
 }
-
 fn change_line_content(file_path: &Path, line_number: usize, new_content: &str) -> io::Result<()> {
     // Open the file for reading
     let file = File::open(file_path)?;
@@ -121,7 +127,7 @@ fn collect_mutations(files: Vec<PathBuf>) -> Vec<(PathBuf, usize, String, Mutati
 
 fn copy_dir_all(src: &Path, dst: &Path, file_extensions: &[&str]) -> io::Result<()> {
     if !dst.exists() {
-        fs::create_dir(dst)?;
+        fs::create_dir_all(dst)?;
     }
 
     for entry in fs::read_dir(src)? {
@@ -191,4 +197,29 @@ fn run_tests(path_dst: &Path) -> bool {
         // println!("Command failed with error: {}", stderr);
     }
     output.status.success()
+}
+
+#[cfg(test)]
+mod tests {
+    use super::do_stuff;
+
+    #[test]
+    fn test_equal() {
+        do_stuff("test_data/equal", "equal");
+    }
+
+    #[test]
+    fn test_equal_fail() {
+        do_stuff("test_data/equalFail", "equalFail");
+    }
+
+    #[test]
+    fn test_not_equal() {
+        do_stuff("test_data/notEqual", "notEqual");
+    }
+
+    #[test]
+    fn test_not_equal_fail() {
+        do_stuff("test_data/notEqualFail", "notEqualFail");
+    }
 }
