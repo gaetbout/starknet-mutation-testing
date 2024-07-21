@@ -2,6 +2,8 @@ use std::process;
 
 pub mod cli;
 pub mod file_manager;
+pub mod runner;
+pub mod test_runner;
 
 fn main() {
     // TODO Ensure there is a Scarb cli?
