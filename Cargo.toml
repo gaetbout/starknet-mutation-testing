@@ -4,7 +4,8 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
+clap = { version = "4.5.9", features = ["derive"] }
 
 
 [alias]
-dev = "cargo run --package starknet-mutation-testing --bin starknet-mutation-testing"
+dev = "cargo run --bin starknet-mutation-testing --"
