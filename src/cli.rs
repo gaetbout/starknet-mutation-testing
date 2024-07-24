@@ -9,7 +9,11 @@ struct Args {
     path: String,
 }
 
+// TODO Catch ctrl-c and clean
+// TODO Add Clean command
+
 // TODO later do an interactive CLI if missing args
+// TODO Add a flag to limit threads to use?
 
 pub fn run() -> Result<&'static str, &'static str> {
     let args = Args::parse();

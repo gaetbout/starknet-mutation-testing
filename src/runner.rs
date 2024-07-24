@@ -2,11 +2,13 @@ use crate::{
     file_manager::{change_line_content, collect_files_with_extension, copy_dir_all},
     test_runner::run_tests,
 };
+use rayon::prelude::*;
 use std::{
     env, fs,
     path::{Path, PathBuf},
 };
 
+#[derive(Clone)]
 enum Mutation {
     Equal,
     NotEqual,
@@ -16,7 +18,6 @@ enum Mutation {
     // LessThan,
     // LessThanOrEqual,
 }
-
 struct Failure {
     error: &'static str,
     file: PathBuf,
@@ -51,8 +52,6 @@ pub fn run_mutation_checks(source_folder_path: String) -> Result<&'static str, &
 // TODO There must be a better way to return success or failure
 fn find_and_test_mutations(path_src: &Path, subfolder: &str) -> Result<&'static str, &'static str> {
     // TODO This could be a map Mutation => data
-    // TODO And could start a thread for each mutation type
-    // Test each mutant in parallel.
     let mutations: Vec<(PathBuf, usize, String, Mutation)> = collect_mutations(path_src);
     if mutations.len() == 0 {
         return Ok("No mutations found");
@@ -63,31 +62,32 @@ fn find_and_test_mutations(path_src: &Path, subfolder: &str) -> Result<&'static 
         .join("tmp")
         .join(subfolder);
 
-    let mut failures: Vec<Failure> = Vec::new();
-    for (idx, (file, pos, original_line, mutation)) in mutations.iter().enumerate() {
-        let path_dst = &path_dst.join(idx.to_string());
-        println!("Testing mutation {} of {}", idx + 1, mutations.len());
-        copy_dir_all(path_src, path_dst, &["cairo", "toml", "lock"])
-            .expect("Couldn't copy test data");
+    let failures = mutations
+        .into_par_iter()
+        .enumerate()
+        .filter_map(|(idx, (file, pos, original_line, mutation))| {
+            let path_dst = &path_dst.join(idx.to_string());
+            copy_dir_all(path_src, path_dst, &["cairo", "toml", "lock"])
+                .expect("Couldn't copy test data");
 
-        let (new_line, error) = match mutation {
-            Mutation::Equal => (original_line.replace("==", "!="), "'==' updated to '!='"),
-            Mutation::NotEqual => (original_line.replace("!=", "=="), "'!=' updated to '=='"),
-        };
+            let (new_line, error) = match mutation {
+                Mutation::Equal => (original_line.replace("==", "!="), "'==' updated to '!='"),
+                Mutation::NotEqual => (original_line.replace("!=", "=="), "'!=' updated to '=='"),
+            };
 
-        let file_dst = path_dst.join(file);
-        change_line_content(&file_dst, pos + 1, &new_line).expect("Error applying mutation");
-        if run_tests(path_dst) {
-            failures.push(Failure {
-                error,
-                file: file.clone(),
-                pos: *pos,
-            });
-        }
-        println!("Removing {}", path_dst.to_str().unwrap());
-        fs::remove_dir_all(path_dst).expect("Error while removing tmp folder");
-    }
-
+            let file_dst = path_dst.join(file.clone());
+            change_line_content(&file_dst, pos + 1, &new_line).expect("Error applying mutation");
+            if run_tests(path_dst) {
+                Some(Failure {
+                    error,
+                    file: file.clone(),
+                    pos,
+                })
+            } else {
+                None
+            }
+        })
+        .collect();
     fs::remove_dir_all(path_dst).expect("Error while removing tmp folder");
     print_result(failures)
 }
