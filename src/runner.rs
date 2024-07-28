@@ -169,43 +169,28 @@ fn collect_mutations(path_src: &Path) -> Vec<Mutation> {
 #[cfg(test)]
 mod tests {
     use super::{collect_mutations, test_mutations, Mutation, MutationResult};
+    use rstest::rstest;
     use std::path::Path;
 
-    #[test]
-    fn test_equal() {
-        let path_src = Path::new("test_data/equal");
+    #[rstest]
+    #[case("equal")]
+    #[case("notEqual")]
+    fn test_success(#[case] folder: &str) {
+        let path_src = Path::new("test_data").join(folder);
         let mutations: Vec<Mutation> = collect_mutations(&path_src);
-        let result = test_mutations(path_src, "equal", mutations);
+        let result = test_mutations(path_src.as_path(), folder, mutations);
         assert!(result.len() == 2);
         assert!(matches!(result[0], MutationResult::Success(_)));
         assert!(matches!(result[1], MutationResult::Success(_)));
     }
 
-    #[test]
-    fn test_equal_fail() {
-        let path_src = Path::new("test_data/equalFail");
+    #[rstest]
+    #[case("equalFail")]
+    #[case("notEqualFail")]
+    fn test_failure(#[case] folder: &str) {
+        let path_src = Path::new("test_data").join(folder);
         let mutations: Vec<Mutation> = collect_mutations(&path_src);
-        let result = test_mutations(path_src, "equalFail", mutations);
-        assert!(result.len() == 2);
-        assert!(matches!(result[0], MutationResult::Failure(_)));
-        assert!(matches!(result[1], MutationResult::Failure(_)));
-    }
-
-    #[test]
-    fn test_not_equal() {
-        let path_src = Path::new("test_data/notEqual");
-        let mutations: Vec<Mutation> = collect_mutations(&path_src);
-        let result = test_mutations(path_src, "notEqual", mutations);
-        assert!(result.len() == 2);
-        assert!(matches!(result[0], MutationResult::Success(_)));
-        assert!(matches!(result[1], MutationResult::Success(_)));
-    }
-
-    #[test]
-    fn test_not_equal_fail() {
-        let path_src = Path::new("test_data/notEqualFail");
-        let mutations: Vec<Mutation> = collect_mutations(&path_src);
-        let result = test_mutations(path_src, "notEqualFail", mutations);
+        let result = test_mutations(path_src.as_path(), folder, mutations);
         assert!(result.len() == 2);
         assert!(matches!(result[0], MutationResult::Failure(_)));
         assert!(matches!(result[1], MutationResult::Failure(_)));
