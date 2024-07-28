@@ -1,1 +1,1 @@
-mod equal;
+mod simple;

@@ -175,6 +175,7 @@ mod tests {
     #[rstest]
     #[case("equal", 2)]
     #[case("notEqual", 2)]
+    #[case("greaterThenOrEqual", 4)]
     fn test_success(#[case] folder: &str, #[case] len: usize) {
         let path_src = Path::new("test_data").join(folder);
         let mutations: Vec<Mutation> = collect_mutations(&path_src);
@@ -188,6 +189,7 @@ mod tests {
     #[rstest]
     #[case("equalFail", 2)]
     #[case("notEqualFail", 2)]
+    #[case("greaterThenOrEqual", 4)]
     fn test_failure(#[case] folder: &str, #[case] len: usize) {
         let path_src = Path::new("test_data").join(folder);
         let mutations: Vec<Mutation> = collect_mutations(&path_src);

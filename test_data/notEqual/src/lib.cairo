@@ -1,1 +1,1 @@
-mod not_equal;
+mod simple;
