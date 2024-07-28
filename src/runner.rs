@@ -13,11 +13,10 @@ use std::{
 enum MutationType {
     Equal,
     NotEqual,
-    // TODO Some can lead to multiple modifications
-    // GreaterThan, // e.g > => >= or <
-    // GreaterThanOrEqual,
-    // LessThan,
-    // LessThanOrEqual,
+    GreaterThan,
+    GreaterThanOrEqual,
+    LessThan,
+    LessThanOrEqual,
 }
 
 impl MutationType {
@@ -25,6 +24,10 @@ impl MutationType {
         match self {
             MutationType::Equal => "==",
             MutationType::NotEqual => "!=",
+            MutationType::GreaterThan => ">",
+            MutationType::GreaterThanOrEqual => ">=",
+            MutationType::LessThan => "<",
+            MutationType::LessThanOrEqual => "<=",
         }
     }
 
@@ -32,7 +35,6 @@ impl MutationType {
         if !line.contains(self.as_str()) {
             return vec![];
         }
-
         match self {
             MutationType::Equal => vec![Mutation {
                 from: self.clone(),
@@ -48,6 +50,33 @@ impl MutationType {
                 line,
                 pos,
             }],
+            MutationType::GreaterThan => {
+                vec![]
+            }
+            MutationType::GreaterThanOrEqual => {
+                vec![
+                    Mutation {
+                        from: self.clone(),
+                        to: MutationType::Equal,
+                        file_name: file_name.clone(),
+                        line: line.clone(),
+                        pos,
+                    },
+                    Mutation {
+                        from: self.clone(),
+                        to: MutationType::GreaterThan,
+                        file_name,
+                        line,
+                        pos,
+                    },
+                ]
+            }
+            MutationType::LessThan => {
+                vec![]
+            }
+            MutationType::LessThanOrEqual => {
+                vec![]
+            }
         }
     }
 }
@@ -146,7 +175,11 @@ fn test_mutations(
 fn collect_mutations(path_src: &Path) -> Vec<Mutation> {
     let files = collect_files_with_extension(path_src, "cairo").expect("Couldn't collect files");
 
-    let mutations_to_check = [MutationType::Equal, MutationType::NotEqual];
+    let mutations_to_check = [
+        MutationType::Equal,
+        MutationType::NotEqual,
+        MutationType::GreaterThanOrEqual,
+    ];
     let mut mutations: Vec<Mutation> = Vec::new();
 
     // TODO Transform this into a map + collect
@@ -189,7 +222,7 @@ mod tests {
     #[rstest]
     #[case("equalFail", 2)]
     #[case("notEqualFail", 2)]
-    #[case("greaterThenOrEqual", 4)]
+    #[case("greaterThenOrEqualFail", 4)]
     fn test_failure(#[case] folder: &str, #[case] len: usize) {
         let path_src = Path::new("test_data").join(folder);
         let mutations: Vec<Mutation> = collect_mutations(&path_src);

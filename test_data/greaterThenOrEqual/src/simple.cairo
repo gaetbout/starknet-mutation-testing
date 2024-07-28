@@ -1,15 +1,13 @@
 
-fn simple_1() -> bool {
-    let a = 1;
+fn simple_1(a: u64) -> bool {
     let b = 1;
-    a == b
+    a >= b
 }
 
 
-fn simple_2() -> bool {
-    let a = 1;
+fn simple_2(a: u64) -> bool {
     let b = 1;
-    a == b
+    a >= b
 }
 
 #[cfg(test)]
@@ -18,11 +16,13 @@ mod tests {
 
     #[test]
     fn test_1() {
-        assert(simple_1(), 'pass');
+        assert(simple_1(1), 'pass');
+        assert(simple_1(2), 'pass');
     }
 
     #[test]
     fn test_2() {
-        assert(simple_2(), 'pass');
+        assert(simple_2(1), 'pass');
+        assert(simple_2(2), 'pass');
     }
 }
