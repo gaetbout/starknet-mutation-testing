@@ -1,12 +1,12 @@
 
-fn simple_equal() -> bool {
+fn simple_1() -> bool {
     let a = 1;
     let b = 1;
     a == b
 }
 
 
-fn simple_equal_copy() -> bool {
+fn simple_2() -> bool {
     let a = 1;
     let b = 1;
     a == b
@@ -14,15 +14,15 @@ fn simple_equal_copy() -> bool {
 
 #[cfg(test)]
 mod tests {
-    use super::{simple_equal,simple_equal_copy};
+    use super::{simple_1,simple_2};
 
     #[test]
-    fn test_simple_test() {
-        assert(simple_equal(), 'pass');
+    fn test_1() {
+        assert(simple_1(), 'pass');
     }
 
     #[test]
-    fn test_simple_equal_copy() {
-        assert(simple_equal_copy(), 'pass');
+    fn test_2() {
+        assert(simple_2(), 'pass');
     }
 }

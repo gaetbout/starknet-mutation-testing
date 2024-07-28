@@ -173,26 +173,28 @@ mod tests {
     use std::path::Path;
 
     #[rstest]
-    #[case("equal")]
-    #[case("notEqual")]
-    fn test_success(#[case] folder: &str) {
+    #[case("equal", 2)]
+    #[case("notEqual", 2)]
+    fn test_success(#[case] folder: &str, #[case] len: usize) {
         let path_src = Path::new("test_data").join(folder);
         let mutations: Vec<Mutation> = collect_mutations(&path_src);
         let result = test_mutations(path_src.as_path(), folder, mutations);
-        assert!(result.len() == 2);
-        assert!(matches!(result[0], MutationResult::Success(_)));
-        assert!(matches!(result[1], MutationResult::Success(_)));
+        assert!(result.len() == len);
+        result.iter().for_each(|r| {
+            assert!(matches!(r, MutationResult::Success(_)));
+        });
     }
 
     #[rstest]
-    #[case("equalFail")]
-    #[case("notEqualFail")]
-    fn test_failure(#[case] folder: &str) {
+    #[case("equalFail", 2)]
+    #[case("notEqualFail", 2)]
+    fn test_failure(#[case] folder: &str, #[case] len: usize) {
         let path_src = Path::new("test_data").join(folder);
         let mutations: Vec<Mutation> = collect_mutations(&path_src);
         let result = test_mutations(path_src.as_path(), folder, mutations);
-        assert!(result.len() == 2);
-        assert!(matches!(result[0], MutationResult::Failure(_)));
-        assert!(matches!(result[1], MutationResult::Failure(_)));
+        assert!(result.len() == len);
+        result.iter().for_each(|r| {
+            assert!(matches!(r, MutationResult::Failure(_)));
+        });
     }
 }
