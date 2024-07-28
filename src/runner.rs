@@ -1,6 +1,7 @@
 use crate::{
+    cli::print_result,
     file_manager::{change_line_content, collect_files_with_extension, copy_dir_all},
-    test_runner::run_tests,
+    test_runner::{can_build, tests_successful},
 };
 use rayon::prelude::*;
 use std::{
@@ -8,8 +9,8 @@ use std::{
     path::{Path, PathBuf},
 };
 
-#[derive(Clone)]
-enum Mutation {
+#[derive(Debug, Clone)]
+enum MutationType {
     Equal,
     NotEqual,
     // TODO Some can lead to multiple modifications
@@ -18,10 +19,53 @@ enum Mutation {
     // LessThan,
     // LessThanOrEqual,
 }
-struct Failure {
-    error: &'static str,
-    file: PathBuf,
+
+impl MutationType {
+    fn as_str(&self) -> &str {
+        match self {
+            MutationType::Equal => "==",
+            MutationType::NotEqual => "!=",
+        }
+    }
+
+    fn others(&self, file_name: PathBuf, line: String, pos: usize) -> Vec<Mutation> {
+        if !line.contains(self.as_str()) {
+            return vec![];
+        }
+
+        match self {
+            MutationType::Equal => vec![Mutation {
+                from: self.clone(),
+                to: MutationType::NotEqual,
+                file_name,
+                line,
+                pos,
+            }],
+            MutationType::NotEqual => vec![Mutation {
+                from: self.clone(),
+                to: MutationType::Equal,
+                file_name,
+                line,
+                pos,
+            }],
+        }
+    }
+}
+
+#[derive(Debug)]
+pub struct Mutation {
+    from: MutationType,
+    to: MutationType,
+    file_name: PathBuf,
+    line: String,
     pos: usize,
+}
+
+#[derive(Debug)]
+pub enum MutationResult {
+    Success(Mutation),
+    BuildFailure(Mutation),
+    Failure(Mutation),
 }
 
 pub fn run_mutation_checks(source_folder_path: String) -> Result<&'static str, &'static str> {
@@ -41,7 +85,7 @@ pub fn run_mutation_checks(source_folder_path: String) -> Result<&'static str, &
     }
 
     // Making sure all tests pass before starting
-    if !run_tests(path_src) {
+    if !tests_successful(path_src) {
         return Err("Tests aren't passing");
     }
 
@@ -51,8 +95,7 @@ pub fn run_mutation_checks(source_folder_path: String) -> Result<&'static str, &
 
 // TODO There must be a better way to return success or failure
 fn find_and_test_mutations(path_src: &Path, subfolder: &str) -> Result<&'static str, &'static str> {
-    // TODO This could be a map Mutation => data
-    let mutations: Vec<(PathBuf, usize, String, Mutation)> = collect_mutations(path_src);
+    let mutations: Vec<Mutation> = collect_mutations(path_src);
     if mutations.len() == 0 {
         return Ok("No mutations found");
     }
@@ -62,76 +105,53 @@ fn find_and_test_mutations(path_src: &Path, subfolder: &str) -> Result<&'static 
         .join("tmp")
         .join(subfolder);
 
-    let failures = mutations
+    let results = mutations
         .into_par_iter()
         .enumerate()
-        .filter_map(|(idx, (file, pos, original_line, mutation))| {
+        .map(|(idx, mutation)| {
             let path_dst = &path_dst.join(idx.to_string());
             copy_dir_all(path_src, path_dst, &["cairo", "toml", "lock"])
                 .expect("Couldn't copy test data");
 
-            let (new_line, error) = match mutation {
-                Mutation::Equal => (original_line.replace("==", "!="), "'==' updated to '!='"),
-                Mutation::NotEqual => (original_line.replace("!=", "=="), "'!=' updated to '=='"),
-            };
+            // Mutation from as fn
+            let new_line = mutation
+                .line
+                .replace(mutation.from.as_str(), mutation.to.as_str());
 
-            let file_dst = path_dst.join(file.clone());
-            change_line_content(&file_dst, pos + 1, &new_line).expect("Error applying mutation");
-            if run_tests(path_dst) {
-                Some(Failure {
-                    error,
-                    file: file.clone(),
-                    pos,
-                })
+            let file_dst = path_dst.join(mutation.file_name.clone());
+            change_line_content(&file_dst, mutation.pos + 1, &new_line)
+                .expect("Error applying mutation");
+
+            if !can_build(path_dst) {
+                MutationResult::BuildFailure(mutation)
+            } else if tests_successful(path_dst) {
+                MutationResult::Failure(mutation)
             } else {
-                None
+                MutationResult::Success(mutation)
             }
         })
         .collect();
     fs::remove_dir_all(path_dst).expect("Error while removing tmp folder");
-    print_result(failures)
+    print_result(results)
 }
 
-fn print_result(failures: Vec<Failure>) -> Result<&'static str, &'static str> {
-    if failures.len() > 0 {
-        println!("Found {} failing mutation(s):", failures.len());
-        for failure in failures {
-            println!("\tMutation applied {}", failure.error);
-            println!("\tFile {:?} line {:?}\n", failure.file, failure.pos + 1);
-        }
-        Err("Some mutation tests failed")
-    } else {
-        Ok("All mutation tests passed")
-    }
-}
-
-fn collect_mutations(path_src: &Path) -> Vec<(PathBuf, usize, String, Mutation)> {
+fn collect_mutations(path_src: &Path) -> Vec<Mutation> {
     let files = collect_files_with_extension(path_src, "cairo").expect("Couldn't collect files");
 
-    let mut mutations = Vec::new();
+    let mutations_to_check = [MutationType::Equal, MutationType::NotEqual];
+    let mut mutations: Vec<Mutation> = Vec::new();
 
+    // TODO Transform this into a map + collect
     for file in &files {
         // Read the content of the file into a string
         let content = fs::read_to_string(&file).expect("Error while reading the file");
+        let file_name = file.strip_prefix(path_src).expect("msg").to_path_buf();
         // Look for mutation
+        // TODO If line is commented ==> Ignore
         for (pos, line) in content.lines().into_iter().enumerate() {
             let line = line.to_string();
-            if line.contains("==") {
-                mutations.push((
-                    file.strip_prefix(path_src).expect("msg").to_path_buf(),
-                    pos,
-                    line.clone(),
-                    Mutation::Equal,
-                ));
-            }
-
-            if line.contains("!=") {
-                mutations.push((
-                    file.strip_prefix(path_src).expect("msg").to_path_buf(),
-                    pos,
-                    line.clone(),
-                    Mutation::NotEqual,
-                ));
+            for mutation in &mutations_to_check {
+                mutations.append(&mut mutation.others(file_name.clone(), line.clone(), pos));
             }
         }
     }

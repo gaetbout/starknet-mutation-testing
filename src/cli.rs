@@ -1,4 +1,4 @@
-use crate::runner::run_mutation_checks;
+use crate::runner::{run_mutation_checks, MutationResult};
 use clap::Parser;
 
 #[derive(Parser, Debug)]
@@ -18,4 +18,39 @@ struct Args {
 pub fn run() -> Result<&'static str, &'static str> {
     let args = Args::parse();
     run_mutation_checks(args.path.to_owned())
+}
+
+// TODO Make this a map?
+pub fn print_result(results: Vec<MutationResult>) -> Result<&'static str, &'static str> {
+    // TODO Add some color in this result?
+    println!(
+        "Found {} mutation{}:",
+        results.len(),
+        if results.len() > 1 { "s" } else { "" }
+    );
+    println!(
+        "\t{} successful",
+        results
+            .iter()
+            .filter(|r| matches!(r, MutationResult::Success(_)))
+            .count()
+    );
+    println!(
+        "\t{} build failures",
+        results
+            .iter()
+            .filter(|r| matches!(r, MutationResult::BuildFailure(_)))
+            .count()
+    );
+    let failures = results
+        .iter()
+        .filter(|r| matches!(r, MutationResult::Failure(_)))
+        .collect::<Vec<_>>();
+    println!("\t{} failures", failures.len());
+
+    if failures.is_empty() {
+        Ok("All mutation tests passed")
+    } else {
+        Err("Some mutation tests failed")
+    }
 }
