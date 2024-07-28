@@ -61,6 +61,19 @@ pub struct Mutation {
     pos: usize,
 }
 
+impl Mutation {
+    fn apply_mutation(&self, path_src: &Path, path_dst: &Path) {
+        copy_dir_all(path_src, path_dst, &["cairo", "toml", "lock"])
+            .expect("Couldn't copy test data");
+
+        // Mutation from as fn
+        let new_line = self.line.replace(self.from.as_str(), self.to.as_str());
+
+        let file_dst = path_dst.join(self.file_name.clone());
+        change_line_content(&file_dst, self.pos + 1, &new_line).expect("Error applying mutation");
+    }
+}
+
 #[derive(Debug)]
 pub enum MutationResult {
     Success(Mutation),
@@ -90,16 +103,20 @@ pub fn run_mutation_checks(source_folder_path: String) -> Result<&'static str, &
     }
 
     let path_src = fs::canonicalize(&path_src).expect("Couldn't canonicalize path");
-    find_and_test_mutations(&path_src.as_path(), "cli")
-}
-
-// TODO There must be a better way to return success or failure
-fn find_and_test_mutations(path_src: &Path, subfolder: &str) -> Result<&'static str, &'static str> {
-    let mutations: Vec<Mutation> = collect_mutations(path_src);
+    let mutations: Vec<Mutation> = collect_mutations(&path_src.as_path());
     if mutations.len() == 0 {
         return Ok("No mutations found");
     }
+    let results = test_mutations(&path_src.as_path(), "cli", mutations);
+    print_result(results)
+}
 
+// TODO There must be a better way to return success or failure
+fn test_mutations(
+    path_src: &Path,
+    subfolder: &str,
+    mutations: Vec<Mutation>,
+) -> Vec<MutationResult> {
     let path_dst = &env::current_dir()
         .expect("Couldn't access pwd")
         .join("tmp")
@@ -110,17 +127,8 @@ fn find_and_test_mutations(path_src: &Path, subfolder: &str) -> Result<&'static 
         .enumerate()
         .map(|(idx, mutation)| {
             let path_dst = &path_dst.join(idx.to_string());
-            copy_dir_all(path_src, path_dst, &["cairo", "toml", "lock"])
-                .expect("Couldn't copy test data");
 
-            // Mutation from as fn
-            let new_line = mutation
-                .line
-                .replace(mutation.from.as_str(), mutation.to.as_str());
-
-            let file_dst = path_dst.join(mutation.file_name.clone());
-            change_line_content(&file_dst, mutation.pos + 1, &new_line)
-                .expect("Error applying mutation");
+            mutation.apply_mutation(path_src, path_dst);
 
             if !can_build(path_dst) {
                 MutationResult::BuildFailure(mutation)
@@ -132,7 +140,7 @@ fn find_and_test_mutations(path_src: &Path, subfolder: &str) -> Result<&'static 
         })
         .collect();
     fs::remove_dir_all(path_dst).expect("Error while removing tmp folder");
-    print_result(results)
+    results
 }
 
 fn collect_mutations(path_src: &Path) -> Vec<Mutation> {
@@ -160,27 +168,46 @@ fn collect_mutations(path_src: &Path) -> Vec<Mutation> {
 
 #[cfg(test)]
 mod tests {
-    use super::find_and_test_mutations;
+    use super::{collect_mutations, test_mutations, Mutation, MutationResult};
     use std::path::Path;
+
     #[test]
     fn test_equal() {
-        assert!(find_and_test_mutations(Path::new("test_data/equal"), "equal").is_ok());
+        let path_src = Path::new("test_data/equal");
+        let mutations: Vec<Mutation> = collect_mutations(&path_src);
+        let result = test_mutations(path_src, "equal", mutations);
+        assert!(result.len() == 2);
+        assert!(matches!(result[0], MutationResult::Success(_)));
+        assert!(matches!(result[1], MutationResult::Success(_)));
     }
 
     #[test]
     fn test_equal_fail() {
-        assert!(find_and_test_mutations(Path::new("test_data/equalFail"), "equalFail").is_err());
+        let path_src = Path::new("test_data/equalFail");
+        let mutations: Vec<Mutation> = collect_mutations(&path_src);
+        let result = test_mutations(path_src, "equalFail", mutations);
+        assert!(result.len() == 2);
+        assert!(matches!(result[0], MutationResult::Failure(_)));
+        assert!(matches!(result[1], MutationResult::Failure(_)));
     }
 
     #[test]
     fn test_not_equal() {
-        assert!(find_and_test_mutations(Path::new("test_data/notEqual"), "notEqual").is_ok());
+        let path_src = Path::new("test_data/notEqual");
+        let mutations: Vec<Mutation> = collect_mutations(&path_src);
+        let result = test_mutations(path_src, "notEqual", mutations);
+        assert!(result.len() == 2);
+        assert!(matches!(result[0], MutationResult::Success(_)));
+        assert!(matches!(result[1], MutationResult::Success(_)));
     }
 
     #[test]
     fn test_not_equal_fail() {
-        assert!(
-            find_and_test_mutations(Path::new("test_data/notEqualFail"), "notEqualFail").is_err()
-        );
+        let path_src = Path::new("test_data/notEqualFail");
+        let mutations: Vec<Mutation> = collect_mutations(&path_src);
+        let result = test_mutations(path_src, "notEqualFail", mutations);
+        assert!(result.len() == 2);
+        assert!(matches!(result[0], MutationResult::Failure(_)));
+        assert!(matches!(result[1], MutationResult::Failure(_)));
     }
 }

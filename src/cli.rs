@@ -26,7 +26,7 @@ pub fn print_result(results: Vec<MutationResult>) -> Result<&'static str, &'stat
     println!(
         "Found {} mutation{}:",
         results.len(),
-        if results.len() > 1 { "s" } else { "" }
+        s_or_nothing(&results)
     );
     println!(
         "\t{} successful",
@@ -52,5 +52,13 @@ pub fn print_result(results: Vec<MutationResult>) -> Result<&'static str, &'stat
         Ok("All mutation tests passed")
     } else {
         Err("Some mutation tests failed")
+    }
+}
+
+fn s_or_nothing<T>(arr: &Vec<T>) -> &'static str {
+    if arr.len() > 1 {
+        "s"
+    } else {
+        ""
     }
 }
