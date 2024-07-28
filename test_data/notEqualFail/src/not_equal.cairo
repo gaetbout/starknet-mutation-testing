@@ -11,16 +11,3 @@ fn simple_equal_copy() -> bool {
     let b = 1;
     a != b
 }
-
-#[cfg(test)]
-mod tests {
-    use super::{simple_equal,simple_equal_copy};
-
-    #[test]
-    fn test_simple_test() {
-    }
-
-    #[test]
-    fn test_simple_equal_copy() {
-    }
-}
