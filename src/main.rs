@@ -2,6 +2,7 @@ use std::process;
 
 pub mod cli;
 pub mod file_manager;
+pub mod mutant;
 pub mod runner;
 pub mod test_runner;
 

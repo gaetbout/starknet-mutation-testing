@@ -1,4 +1,4 @@
-use crate::runner::{run_mutation_checks, MutationResult};
+use crate::{mutant::MutationResult, runner::run_mutation_checks};
 use clap::Parser;
 
 #[derive(Parser, Debug)]
