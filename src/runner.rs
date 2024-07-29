@@ -87,7 +87,22 @@ impl MutationType {
                 ]
             }
             MutationType::LessThan => {
-                vec![]
+                vec![
+                    Mutation {
+                        from: self.clone(),
+                        to: MutationType::LessThanOrEqual,
+                        file_name: file_name.clone(),
+                        line: line.clone(),
+                        pos,
+                    },
+                    Mutation {
+                        from: self.clone(),
+                        to: MutationType::GreaterThan,
+                        file_name,
+                        line,
+                        pos,
+                    },
+                ]
             }
             MutationType::LessThanOrEqual => {
                 vec![
@@ -210,6 +225,7 @@ fn collect_mutations(path_src: &Path) -> Vec<Mutation> {
         MutationType::NotEqual,
         MutationType::GreaterThan,
         MutationType::GreaterThanOrEqual,
+        MutationType::LessThan,
         MutationType::LessThanOrEqual,
     ];
     let mut mutations: Vec<Mutation> = Vec::new();
@@ -240,9 +256,10 @@ mod tests {
     #[rstest]
     #[case("equal", 2)]
     #[case("notEqual", 2)]
-    #[case("greaterThen", 4)]
-    #[case("greaterThenOrEqual", 4)]
-    #[case("lessThenOrEqual", 4)]
+    #[case("greaterThan", 4)]
+    #[case("greaterThanOrEqual", 4)]
+    #[case("lessThan", 4)]
+    #[case("lessThanOrEqual", 4)]
     fn test_success(#[case] folder: &str, #[case] len: usize) {
         let path_src = Path::new("test_data").join(folder);
         let mutations: Vec<Mutation> = collect_mutations(&path_src);
@@ -256,9 +273,10 @@ mod tests {
     #[rstest]
     #[case("equalFail", 2)]
     #[case("notEqualFail", 2)]
-    #[case("greaterThenFail", 4)]
-    #[case("greaterThenOrEqualFail", 4)]
-    #[case("lessThenOrEqualFail", 4)]
+    #[case("greaterThanFail", 4)]
+    #[case("greaterThanOrEqualFail", 4)]
+    #[case("lessThanFail", 4)]
+    #[case("lessThanOrEqualFail", 4)]
     fn test_failure(#[case] folder: &str, #[case] len: usize) {
         let path_src = Path::new("test_data").join(folder);
         let mutations: Vec<Mutation> = collect_mutations(&path_src);
