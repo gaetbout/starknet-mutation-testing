@@ -43,6 +43,7 @@ fn test_mutations(
     subfolder: &str,
     mutations: Vec<Mutation>,
 ) -> Vec<MutationResult> {
+    println!("Found {} mutations", mutations.len());
     let path_dst = &env::current_dir()
         .expect("Couldn't access pwd")
         .join("tmp")

@@ -1,4 +1,5 @@
 use crate::file_manager::{change_line_content, copy_dir_all};
+use std::fmt;
 use std::path::{Path, PathBuf};
 
 #[derive(Debug, Clone)]
@@ -25,6 +26,31 @@ pub struct Mutation {
     file_name: PathBuf,
     line: String,
     pos: usize,
+}
+
+impl fmt::Display for Mutation {
+    // This trait requires `fmt` with this exact signature.
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(
+            f,
+            "{}:{}\n\t\"{}\" updated to \"{}\" ",
+            self.file_name.to_str().unwrap(),
+            self.pos + 1,
+            self.from.as_str(),
+            self.to.as_str()
+        )
+    }
+}
+
+impl fmt::Display for MutationResult {
+    // This trait requires `fmt` with this exact signature.
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        match self {
+            MutationResult::Success(mutation) => panic!("Success should not be printed"),
+            MutationResult::BuildFailure(mutation) => write!(f, "Build failure: {}", mutation),
+            MutationResult::Failure(mutation) => write!(f, "{}", mutation),
+        }
+    }
 }
 
 impl MutationType {
