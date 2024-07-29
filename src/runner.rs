@@ -13,7 +13,7 @@ use std::{
 enum MutationType {
     Equal,
     NotEqual,
-    GreaterThan,
+    GreaterThan, // TODO Should I just add all 3 other mutations for each greaterThan, greaterThanOrEqual, lessThan, lessThanOrEqual?
     GreaterThanOrEqual,
     LessThan,
     LessThanOrEqual,
@@ -75,7 +75,22 @@ impl MutationType {
                 vec![]
             }
             MutationType::LessThanOrEqual => {
-                vec![]
+                vec![
+                    Mutation {
+                        from: self.clone(),
+                        to: MutationType::Equal,
+                        file_name: file_name.clone(),
+                        line: line.clone(),
+                        pos,
+                    },
+                    Mutation {
+                        from: self.clone(),
+                        to: MutationType::LessThan,
+                        file_name,
+                        line,
+                        pos,
+                    },
+                ]
             }
         }
     }
@@ -179,6 +194,7 @@ fn collect_mutations(path_src: &Path) -> Vec<Mutation> {
         MutationType::Equal,
         MutationType::NotEqual,
         MutationType::GreaterThanOrEqual,
+        MutationType::LessThanOrEqual,
     ];
     let mut mutations: Vec<Mutation> = Vec::new();
 
@@ -209,6 +225,7 @@ mod tests {
     #[case("equal", 2)]
     #[case("notEqual", 2)]
     #[case("greaterThenOrEqual", 4)]
+    #[case("lessThenOrEqual", 4)]
     fn test_success(#[case] folder: &str, #[case] len: usize) {
         let path_src = Path::new("test_data").join(folder);
         let mutations: Vec<Mutation> = collect_mutations(&path_src);
@@ -223,6 +240,7 @@ mod tests {
     #[case("equalFail", 2)]
     #[case("notEqualFail", 2)]
     #[case("greaterThenOrEqualFail", 4)]
+    #[case("lessThenOrEqualFail", 4)]
     fn test_failure(#[case] folder: &str, #[case] len: usize) {
         let path_src = Path::new("test_data").join(folder);
         let mutations: Vec<Mutation> = collect_mutations(&path_src);
