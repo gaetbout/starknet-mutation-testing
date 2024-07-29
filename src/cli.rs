@@ -47,6 +47,7 @@ pub fn print_result(results: Vec<MutationResult>) -> Result<&'static str, &'stat
         .filter(|r| matches!(r, MutationResult::Failure(_)))
         .collect::<Vec<_>>();
     println!("\t{} failures", failures.len());
+    println!("{:?}", results);
 
     if failures.is_empty() {
         Ok("All mutation tests passed")

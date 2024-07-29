@@ -24,9 +24,9 @@ impl MutationType {
         match self {
             MutationType::Equal => "==",
             MutationType::NotEqual => "!=",
-            MutationType::GreaterThan => ">",
+            MutationType::GreaterThan => " > ", // TODO fix: should ignore if it is "->"
             MutationType::GreaterThanOrEqual => ">=",
-            MutationType::LessThan => "<",
+            MutationType::LessThan => " < ",
             MutationType::LessThanOrEqual => "<=",
         }
     }
@@ -51,7 +51,22 @@ impl MutationType {
                 pos,
             }],
             MutationType::GreaterThan => {
-                vec![]
+                vec![
+                    Mutation {
+                        from: self.clone(),
+                        to: MutationType::GreaterThanOrEqual,
+                        file_name: file_name.clone(),
+                        line: line.clone(),
+                        pos,
+                    },
+                    Mutation {
+                        from: self.clone(),
+                        to: MutationType::LessThan,
+                        file_name,
+                        line,
+                        pos,
+                    },
+                ]
             }
             MutationType::GreaterThanOrEqual => {
                 vec![
@@ -193,6 +208,7 @@ fn collect_mutations(path_src: &Path) -> Vec<Mutation> {
     let mutations_to_check = [
         MutationType::Equal,
         MutationType::NotEqual,
+        MutationType::GreaterThan,
         MutationType::GreaterThanOrEqual,
         MutationType::LessThanOrEqual,
     ];
@@ -224,6 +240,7 @@ mod tests {
     #[rstest]
     #[case("equal", 2)]
     #[case("notEqual", 2)]
+    #[case("greaterThen", 4)]
     #[case("greaterThenOrEqual", 4)]
     #[case("lessThenOrEqual", 4)]
     fn test_success(#[case] folder: &str, #[case] len: usize) {
@@ -239,6 +256,7 @@ mod tests {
     #[rstest]
     #[case("equalFail", 2)]
     #[case("notEqualFail", 2)]
+    #[case("greaterThenFail", 4)]
     #[case("greaterThenOrEqualFail", 4)]
     #[case("lessThenOrEqualFail", 4)]
     fn test_failure(#[case] folder: &str, #[case] len: usize) {
