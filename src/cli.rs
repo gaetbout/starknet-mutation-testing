@@ -35,13 +35,12 @@ pub fn print_result(results: Vec<MutationResult>) -> Result<&'static str, &'stat
             .filter(|r| matches!(r, MutationResult::Success(_)))
             .count()
     );
-    println!(
-        "\t{} build failures",
-        results
-            .iter()
-            .filter(|r| matches!(r, MutationResult::BuildFailure(_)))
-            .count()
-    );
+    let build_failures = results
+        .iter()
+        .filter(|r| matches!(r, MutationResult::BuildFailure(_)))
+        .collect::<Vec<_>>();
+    println!("\t{} build failures", build_failures.len());
+
     let failures = results
         .iter()
         .filter(|r| matches!(r, MutationResult::Failure(_)))
@@ -53,6 +52,11 @@ pub fn print_result(results: Vec<MutationResult>) -> Result<&'static str, &'stat
     for failure in &failures {
         println!("{}\n", failure);
     }
+
+    // for build_failure in &build_failures {
+    //     println!("{}\n", build_failure);
+    // }
+
     if failures.is_empty() {
         Ok("All mutation tests passed")
     } else {

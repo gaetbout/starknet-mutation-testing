@@ -33,6 +33,7 @@ pub fn run_mutation_checks(source_folder_path: String) -> Result<&'static str, &
     if mutations.len() == 0 {
         return Ok("No mutations found");
     }
+    // TODO Sub folder should also have a unique name to avoid some issues if ran multiple times
     let results = test_mutations(&path_src.as_path(), "cli", mutations);
     print_result(results)
 }
@@ -50,7 +51,8 @@ fn test_mutations(
         .join(subfolder);
 
     let results = mutations
-        .into_par_iter()
+        .into_iter()
+        // .into_par_iter()
         .enumerate()
         .map(|(idx, mutation)| {
             let path_dst = &path_dst.join(idx.to_string());
@@ -58,10 +60,13 @@ fn test_mutations(
             mutation.apply_mutation(path_src, path_dst);
 
             if !can_build(path_dst) {
+                println!("Build failed for mutation {:?}", mutation);
                 MutationResult::BuildFailure(mutation)
             } else if tests_successful(path_dst) {
+                println!("Test failed for mutation {:?}", mutation);
                 MutationResult::Failure(mutation)
             } else {
+                println!("Test passed for mutation {:?}", mutation);
                 MutationResult::Success(mutation)
             }
         })
@@ -71,7 +76,8 @@ fn test_mutations(
 }
 
 fn collect_mutations(path_src: &Path) -> Vec<Mutation> {
-    let files = collect_files_with_extension(path_src, "cairo").expect("Couldn't collect files");
+    let files = collect_files_with_extension(&path_src.join("src"), "cairo")
+        .expect("Couldn't collect files");
 
     let mutations_to_check = [
         MutationType::Equal,

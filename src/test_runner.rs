@@ -8,6 +8,7 @@ pub fn can_build(path_dst: &Path) -> bool {
         .output()
         .expect("Failed to execute command");
 
+    // println!("{:?}", output);
     output.status.success()
 }
 

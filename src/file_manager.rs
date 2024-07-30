@@ -32,7 +32,27 @@ pub fn collect_files_with_extension(
     Ok(files)
 }
 
-pub fn copy_dir_all(src: &Path, dst: &Path, file_extensions: &[&str]) -> io::Result<()> {
+pub fn copy_cairo_project(src: &Path, dst: &Path) -> io::Result<()> {
+    if !dst.exists() {
+        fs::create_dir_all(dst)?;
+    }
+
+    fs::copy(&src.join("Scarb.toml"), &dst.join("Scarb.toml"))?;
+    fs::copy(&src.join("Scarb.lock"), &dst.join("Scarb.lock"))?;
+
+    if src.join(".tool-versions").exists() {
+        fs::copy(&src.join(".tool-versions"), &dst.join(".tool-versions"))?;
+    }
+
+    copy_all_cairo(&src.join("src"), &dst.join("src"))?;
+
+    if src.join("tests").exists() {
+        copy_all_cairo(&src.join("tests"), &dst.join("tests"))?;
+    }
+    Ok(())
+}
+
+fn copy_all_cairo(src: &Path, dst: &Path) -> io::Result<()> {
     if !dst.exists() {
         fs::create_dir_all(dst)?;
     }
@@ -43,11 +63,10 @@ pub fn copy_dir_all(src: &Path, dst: &Path, file_extensions: &[&str]) -> io::Res
 
         if path.is_dir() {
             let dest_path = dst.join(path.file_name().unwrap());
-            copy_dir_all(&path, &dest_path, file_extensions)?;
+            copy_all_cairo(&path, &dest_path)?;
         } else {
-            // Check if the file's extension matches any in file_extensions
             if let Some(ext) = path.extension() {
-                if file_extensions.iter().any(|&e| ext == e) {
+                if ext == "cairo" {
                     let dest_file = dst.join(path.file_name().unwrap());
                     fs::copy(&path, &dest_file)?;
                 }

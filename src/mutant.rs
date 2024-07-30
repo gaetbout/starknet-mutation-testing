@@ -1,4 +1,4 @@
-use crate::file_manager::{change_line_content, copy_dir_all};
+use crate::file_manager::{change_line_content, copy_cairo_project};
 use std::fmt;
 use std::path::{Path, PathBuf};
 
@@ -46,7 +46,7 @@ impl fmt::Display for MutationResult {
     // This trait requires `fmt` with this exact signature.
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match self {
-            MutationResult::Success(mutation) => panic!("Success should not be printed"),
+            MutationResult::Success(_) => panic!("Success should not be printed"),
             MutationResult::BuildFailure(mutation) => write!(f, "Build failure: {}", mutation),
             MutationResult::Failure(mutation) => write!(f, "{}", mutation),
         }
@@ -66,9 +66,19 @@ impl MutationType {
     }
 
     pub fn others(&self, file_name: PathBuf, line: String, pos: usize) -> Vec<Mutation> {
-        if !line.contains(self.as_str()) {
+        let self_idx = line.find(self.as_str());
+        if self_idx.is_none() {
             return vec![];
         }
+        let self_idx = self_idx.unwrap();
+        // Hopefully all line should be < 1000000000000
+        let comment_idx = line.find("//").unwrap_or(1000000000000);
+        // If the mutation is in a comment, ignore it
+        if comment_idx < self_idx {
+            println!("Mutation found in a comment: {}", line);
+            return vec![];
+        }
+
         match self {
             MutationType::Equal => vec![Mutation {
                 from: self.clone(),
@@ -162,8 +172,7 @@ impl MutationType {
 
 impl Mutation {
     pub fn apply_mutation(&self, path_src: &Path, path_dst: &Path) {
-        copy_dir_all(path_src, path_dst, &["cairo", "toml", "lock"])
-            .expect("Couldn't copy test data");
+        copy_cairo_project(path_src, path_dst).expect("Couldn't copy test data");
 
         // Mutation from as fn
         let new_line = self.line.replace(self.from.as_str(), self.to.as_str());
