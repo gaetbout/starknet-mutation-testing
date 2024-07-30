@@ -5,7 +5,11 @@ use crate::{
     test_runner::{can_build, tests_successful},
 };
 use rayon::prelude::*;
-use std::{env, fs, path::Path};
+use std::{
+    env, fs,
+    path::Path,
+    time::{SystemTime, UNIX_EPOCH},
+};
 
 pub fn run_mutation_checks(source_folder_path: String) -> Result<&'static str, &'static str> {
     let path_src = Path::new(source_folder_path.as_str());
@@ -33,15 +37,19 @@ pub fn run_mutation_checks(source_folder_path: String) -> Result<&'static str, &
     if mutations.len() == 0 {
         return Ok("No mutations found");
     }
-    // TODO Sub folder should also have a unique name to avoid some issues if ran multiple times
-    let results = test_mutations(&path_src.as_path(), "cli", mutations);
+    let start = SystemTime::now();
+    let since_the_epoch = start
+        .duration_since(UNIX_EPOCH)
+        .expect("Time went backwards");
+    let unique = since_the_epoch.as_secs().to_string();
+    let results = test_mutations(&path_src.as_path(), format!("cli/{}", unique), mutations);
     print_result(results)
 }
 
 // TODO There must be a better way to return success or failure
 fn test_mutations(
     path_src: &Path,
-    subfolder: &str,
+    subfolder: String,
     mutations: Vec<Mutation>,
 ) -> Vec<MutationResult> {
     println!("Found {} mutations", mutations.len());
@@ -119,10 +127,11 @@ mod tests {
     #[case("greaterThanOrEqual", 4)]
     #[case("lessThan", 4)]
     #[case("lessThanOrEqual", 4)]
-    fn test_success(#[case] folder: &str, #[case] len: usize) {
-        let path_src = Path::new("test_data").join(folder);
+    fn test_success(#[case] folder: String, #[case] len: usize) {
+        let path_src = Path::new("test_data").join(folder.clone());
         let mutations: Vec<Mutation> = collect_mutations(&path_src);
-        let result = test_mutations(path_src.as_path(), folder, mutations);
+        let dst = format!("tests/{}", folder);
+        let result = test_mutations(path_src.as_path(), dst, mutations);
         assert!(result.len() == len);
         result.iter().for_each(|r| {
             assert!(matches!(r, MutationResult::Success(_)));
@@ -136,10 +145,11 @@ mod tests {
     #[case("greaterThanOrEqualFail", 4)]
     #[case("lessThanFail", 4)]
     #[case("lessThanOrEqualFail", 4)]
-    fn test_failure(#[case] folder: &str, #[case] len: usize) {
-        let path_src = Path::new("test_data").join(folder);
+    fn test_failure(#[case] folder: String, #[case] len: usize) {
+        let path_src = Path::new("test_data").join(folder.clone());
         let mutations: Vec<Mutation> = collect_mutations(&path_src);
-        let result = test_mutations(path_src.as_path(), folder, mutations);
+        let dst = format!("tests/{}", folder);
+        let result = test_mutations(path_src.as_path(), dst, mutations);
         assert!(result.len() == len);
         result.iter().for_each(|r| {
             assert!(matches!(r, MutationResult::Failure(_)));
