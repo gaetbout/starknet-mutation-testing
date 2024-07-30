@@ -47,10 +47,12 @@ pub fn print_result(results: Vec<MutationResult>) -> Result<&'static str, &'stat
         .collect::<Vec<_>>();
     println!("\t{} failures", failures.len());
 
-    println!("\nFailures:");
+    if failures.len() > 0 {
+        println!("\nFailures:");
 
-    for failure in &failures {
-        println!("{}\n", failure);
+        for failure in &failures {
+            println!("{}\n", failure);
+        }
     }
 
     // for build_failure in &build_failures {
