@@ -103,7 +103,6 @@ fn collect_mutations(path_src: &Path) -> Vec<Mutation> {
         let content = fs::read_to_string(&file).expect("Error while reading the file");
         let file_name = file.strip_prefix(path_src).expect("msg").to_path_buf();
         // Look for mutation
-        // TODO If line is commented ==> Ignore
         for (pos, line) in content.lines().into_iter().enumerate() {
             let line = line.to_string();
             for mutation in &mutations_to_check {

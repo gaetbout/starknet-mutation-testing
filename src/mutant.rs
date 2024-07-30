@@ -1,3 +1,5 @@
+use colored::Colorize;
+
 use crate::file_manager::{change_line_content, copy_cairo_project};
 use std::fmt;
 use std::path::{Path, PathBuf};
@@ -31,11 +33,19 @@ pub struct Mutation {
 impl fmt::Display for Mutation {
     // This trait requires `fmt` with this exact signature.
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(
+        writeln!(
             f,
-            "{}:{}\n\t\"{}\" updated to \"{}\" ",
+            "{} {}:{}",
+            "-->".blue(),
             self.file_name.to_str().unwrap(),
             self.pos + 1,
+        )
+        .unwrap();
+
+        writeln!(
+            f,
+            "{} \"{}\" updated to \"{}\"",
+            " |".blue(),
             self.from.as_str(),
             self.to.as_str()
         )
