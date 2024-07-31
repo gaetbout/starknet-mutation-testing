@@ -120,12 +120,12 @@ mod tests {
     use std::path::Path;
 
     #[rstest]
-    #[case("equal", 2)]
-    #[case("notEqual", 2)]
-    #[case("greaterThan", 4)]
-    #[case("greaterThanOrEqual", 4)]
-    #[case("lessThan", 4)]
-    #[case("lessThanOrEqual", 4)]
+    #[case("equal", 1)]
+    #[case("notEqual", 1)]
+    #[case("greaterThan", 2)]
+    #[case("greaterThanOrEqual", 2)]
+    #[case("lessThan", 2)]
+    #[case("lessThanOrEqual", 2)]
     fn test_success(#[case] folder: String, #[case] len: usize) {
         let path_src = Path::new("test_data").join(folder.clone());
         let mutations: Vec<Mutation> = collect_mutations(&path_src);
@@ -138,12 +138,12 @@ mod tests {
     }
 
     #[rstest]
-    #[case("equalFail", 2)]
-    #[case("notEqualFail", 2)]
-    #[case("greaterThanFail", 4)]
-    #[case("greaterThanOrEqualFail", 4)]
-    #[case("lessThanFail", 4)]
-    #[case("lessThanOrEqualFail", 4)]
+    #[case("equalFail", 1)]
+    #[case("notEqualFail", 1)]
+    #[case("greaterThanFail", 2)]
+    #[case("greaterThanOrEqualFail", 2)]
+    #[case("lessThanFail", 2)]
+    #[case("lessThanOrEqualFail", 2)]
     fn test_failure(#[case] folder: String, #[case] len: usize) {
         let path_src = Path::new("test_data").join(folder.clone());
         let mutations: Vec<Mutation> = collect_mutations(&path_src);

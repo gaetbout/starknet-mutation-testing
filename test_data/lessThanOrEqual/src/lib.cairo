@@ -1,28 +1,16 @@
 
-fn simple_1(a: u64) -> bool {
-    let b = 2;
-    a <= b
-}
-
-
-fn simple_2(a: u64) -> bool {
+fn simple(a: u64) -> bool {
     let b = 2;
     a <= b
 }
 
 #[cfg(test)]
 mod tests {
-    use super::{simple_1,simple_2};
+    use super::simple;
 
     #[test]
-    fn test_1() {
-        assert(simple_1(2), 'pass');
-        assert(simple_1(1), 'pass');
-    }
-
-    #[test]
-    fn test_2() {
-        assert(simple_2(2), 'pass');
-        assert(simple_2(1), 'pass');
+    fn test() {
+        assert(simple(2), 'pass');
+        assert(simple(1), 'pass');
     }
 }
