@@ -35,21 +35,16 @@ pub struct Mutation {
 impl fmt::Display for Mutation {
     // This trait requires `fmt` with this exact signature.
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        writeln!(
-            f,
-            "{} {}:{}",
-            "-->".blue(),
-            self.file_name.to_str().unwrap(),
-            self.pos + 1,
-        )
-        .unwrap();
+        writeln!(f, "{}:{}", self.file_name.to_str().unwrap(), self.pos + 1,).unwrap();
 
+        writeln!(f, "{} {}", "- ".red(), self.line.red()).unwrap();
         writeln!(
             f,
-            "{} \"{}\" updated to \"{}\"",
-            " |".blue(),
-            self.from.as_str(),
-            self.to.as_str()
+            "{} {}",
+            "+ ".green(),
+            self.line
+                .replace(self.from.as_str(), self.to.as_str())
+                .green()
         )
     }
 }
