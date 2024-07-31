@@ -94,6 +94,7 @@ fn collect_mutations(path_src: &Path) -> Vec<Mutation> {
         MutationType::GreaterThanOrEqual,
         MutationType::LessThan,
         MutationType::LessThanOrEqual,
+        MutationType::Assert,
     ];
     let mut mutations: Vec<Mutation> = Vec::new();
 
@@ -105,6 +106,10 @@ fn collect_mutations(path_src: &Path) -> Vec<Mutation> {
         // Look for mutation
         for (pos, line) in content.lines().into_iter().enumerate() {
             let line = line.to_string();
+            // We consider the rest of the file as test code
+            if line.contains("#[cfg(test)]") {
+                break;
+            }
             for mutation in &mutations_to_check {
                 mutations.append(&mut mutation.others(file_name.clone(), line.clone(), pos));
             }
@@ -126,6 +131,7 @@ mod tests {
     #[case("greaterThanOrEqual", 2)]
     #[case("lessThan", 2)]
     #[case("lessThanOrEqual", 2)]
+    #[case("assert", 1)]
     fn test_success(#[case] folder: String, #[case] len: usize) {
         let path_src = Path::new("test_data").join(folder.clone());
         let mutations: Vec<Mutation> = collect_mutations(&path_src);
@@ -144,6 +150,7 @@ mod tests {
     #[case("greaterThanOrEqualFail", 2)]
     #[case("lessThanFail", 2)]
     #[case("lessThanOrEqualFail", 2)]
+    #[case("assertFail", 1)]
     fn test_failure(#[case] folder: String, #[case] len: usize) {
         let path_src = Path::new("test_data").join(folder.clone());
         let mutations: Vec<Mutation> = collect_mutations(&path_src);

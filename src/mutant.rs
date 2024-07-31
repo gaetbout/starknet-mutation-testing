@@ -12,6 +12,8 @@ pub enum MutationType {
     GreaterThanOrEqual,
     LessThan,
     LessThanOrEqual,
+    Assert,
+    Comment,
 }
 
 #[derive(Debug)]
@@ -72,6 +74,8 @@ impl MutationType {
             MutationType::GreaterThanOrEqual => ">=",
             MutationType::LessThan => " < ",
             MutationType::LessThanOrEqual => "<=",
+            MutationType::Assert => "assert(",
+            MutationType::Comment => "//",
         }
     }
 
@@ -175,6 +179,22 @@ impl MutationType {
                         pos,
                     },
                 ]
+            }
+            MutationType::Assert => {
+                // Only support one line assert for now
+                if line.chars().last().unwrap() != ';' {
+                    return vec![];
+                }
+                vec![Mutation {
+                    from: self.clone(),
+                    to: MutationType::Comment,
+                    file_name,
+                    line,
+                    pos,
+                }]
+            }
+            MutationType::Comment => {
+                panic!("Comment mutation should not be used");
             }
         }
     }
