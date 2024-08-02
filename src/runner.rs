@@ -1,6 +1,6 @@
 use crate::{
     cli::print_result,
-    file_manager::{canonicalize, collect_files_with_extension},
+    file_manager::collect_files_with_extension,
     mutant::{Mutation, MutationResult, MutationType},
     test_runner::{can_build, tests_successful},
 };
@@ -12,47 +12,16 @@ use std::{
 };
 
 pub fn run_mutation_checks(
-    source_folder_path: String,
-    file_to_check: Option<String>,
+    source_folder_path: PathBuf,
+    file_to_check: Option<PathBuf>,
 ) -> Result<&'static str, String> {
-    let source_folder_path = &canonicalize(&source_folder_path)?;
-
-    // TODO Move all these to CLI
-    if source_folder_path.is_file() {
-        return Err("Path should be a folder file".to_string());
-    }
-
-    let scarb_toml = source_folder_path.join("Scarb.toml");
-    if !scarb_toml.exists() {
-        return Err("Scarb.toml file not found".to_string());
-    }
-
-    // Making sure all tests pass before starting
-    if !tests_successful(source_folder_path) {
-        return Err("Tests aren't passing".to_string());
-    }
-
     let files: Vec<PathBuf> = if let Some(file) = file_to_check {
-        let source_file_path = canonicalize(&file)?;
-        if source_file_path.is_dir() {
-            return Err(format!("{:?} should be a file", source_file_path));
-        }
-
-        // Assert file is within source_folder_path
-        if !source_file_path.starts_with(source_folder_path) {
-            return Err("File should be within the path folder".to_string());
-        }
-
-        // Assert extension is Cairo
-        if source_file_path.extension().unwrap() != "cairo" {
-            return Err("File extension should be .cairo".to_string());
-        }
-        vec![source_file_path]
+        vec![file]
     } else {
         collect_files_with_extension(&source_folder_path.join("src"), "cairo")
             .expect("Couldn't collect files")
     };
-    let mutations: Vec<Mutation> = collect_mutations(source_folder_path, files);
+    let mutations: Vec<Mutation> = collect_mutations(&source_folder_path, files);
 
     if mutations.len() == 0 {
         return Ok("No mutations found");

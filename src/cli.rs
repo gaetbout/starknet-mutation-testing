@@ -1,4 +1,9 @@
-use crate::{mutant::MutationResult, runner::run_mutation_checks};
+use std::path::PathBuf;
+
+use crate::{
+    file_manager::canonicalize, mutant::MutationResult, runner::run_mutation_checks,
+    test_runner::tests_successful,
+};
 use clap::Parser;
 
 #[derive(Parser, Debug)]
@@ -21,9 +26,55 @@ struct Args {
 
 pub fn run() -> Result<&'static str, String> {
     let args = Args::parse();
-    run_mutation_checks(args.path, args.file)
+    let path = check_path(&args.path)?;
+    let file = check_file(&args.file, &path)?;
+    run_mutation_checks(path, file)
 }
 
+fn check_path(source_folder_path: &String) -> Result<PathBuf, String> {
+    let source_folder_path = canonicalize(&source_folder_path)?;
+
+    // TODO Move all these to CLI
+    if source_folder_path.is_file() {
+        return Err("Path should be a folder file".to_string());
+    }
+
+    let scarb_toml = source_folder_path.join("Scarb.toml");
+    if !scarb_toml.exists() {
+        return Err("Scarb.toml file not found".to_string());
+    }
+
+    // Making sure all tests pass before starting
+    if !tests_successful(&source_folder_path) {
+        return Err("Tests aren't passing".to_string());
+    }
+    Ok(source_folder_path)
+}
+
+fn check_file(
+    file: &Option<String>,
+    source_folder_path: &PathBuf,
+) -> Result<Option<PathBuf>, String> {
+    if let Some(file) = file {
+        let source_file_path = canonicalize(&file)?;
+        if source_file_path.is_dir() {
+            return Err(format!("{:?} should be a file", source_file_path));
+        }
+
+        // Assert file is within source_folder_path
+        if !source_file_path.starts_with(source_folder_path) {
+            return Err("File should be within the path folder".to_string());
+        }
+
+        // Assert extension is Cairo
+        if source_file_path.extension().unwrap() != "cairo" {
+            return Err("File extension should be .cairo".to_string());
+        }
+        Ok(Some(source_file_path))
+    } else {
+        Ok(None)
+    }
+}
 // TODO Make this a map?
 pub fn print_result(results: Vec<MutationResult>) -> Result<&'static str, String> {
     // TODO Add some color in this result?
