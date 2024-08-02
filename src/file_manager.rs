@@ -110,3 +110,11 @@ pub fn change_line_content(
 
     Ok(())
 }
+
+pub fn canonicalize(path: &String) -> Result<PathBuf, String> {
+    if let Ok(path_buf) = fs::canonicalize(path) {
+        Ok(path_buf)
+    } else {
+        Err(format!("Invalid path '{}'", path))
+    }
+}

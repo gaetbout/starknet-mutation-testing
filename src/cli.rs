@@ -7,21 +7,25 @@ struct Args {
     /// Path to the folder containing the root Scarb.toml file
     #[arg(short, long)]
     path: String,
+    /// Path to the Cairo file you want to mutate
+    #[arg(short, long)]
+    file: Option<String>,
 }
 
 // TODO Catch ctrl-c and clean
-// TODO Add Clean command
+// TODO OPTION Add Clean command
+// TODO OPTION Which mutation to apply
+// TODO OPTION Limit threads to use?
 
 // TODO later do an interactive CLI if missing args
-// TODO Add a flag to limit threads to use?
 
-pub fn run() -> Result<&'static str, &'static str> {
+pub fn run() -> Result<&'static str, String> {
     let args = Args::parse();
-    run_mutation_checks(args.path.to_owned())
+    run_mutation_checks(args.path, args.file)
 }
 
 // TODO Make this a map?
-pub fn print_result(results: Vec<MutationResult>) -> Result<&'static str, &'static str> {
+pub fn print_result(results: Vec<MutationResult>) -> Result<&'static str, String> {
     // TODO Add some color in this result?
     println!(
         "Found {} mutation{}:",
@@ -62,7 +66,7 @@ pub fn print_result(results: Vec<MutationResult>) -> Result<&'static str, &'stat
     if failures.is_empty() {
         Ok("All mutation tests passed")
     } else {
-        Err("Some mutation tests failed")
+        Err("Some mutation tests failed".to_string())
     }
 }
 
