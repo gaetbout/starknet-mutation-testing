@@ -1,12 +1,12 @@
 use crate::{
     cli::print_result,
-    file_manager::collect_files_with_extension,
+    file_manager::{collect_files_with_extension, get_tmp_dir},
     mutant::{Mutation, MutationResult, MutationType},
     test_runner::{can_build, tests_successful},
 };
 use rayon::prelude::*;
 use std::{
-    env, fs,
+    fs,
     path::{Path, PathBuf},
     time::{SystemTime, UNIX_EPOCH},
 };
@@ -46,10 +46,7 @@ fn test_mutations(
     mutations: Vec<Mutation>,
 ) -> Vec<MutationResult> {
     println!("Found {} mutations", mutations.len());
-    let path_dst = &env::current_dir()
-        .expect("Couldn't access pwd")
-        .join("tmp")
-        .join(subfolder);
+    let path_dst = get_tmp_dir().join(subfolder);
 
     let results = mutations
         .into_iter()

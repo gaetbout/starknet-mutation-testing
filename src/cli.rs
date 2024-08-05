@@ -1,7 +1,9 @@
-use std::path::PathBuf;
+use std::{fs, path::PathBuf};
 
 use crate::{
-    file_manager::canonicalize, mutant::MutationResult, runner::run_mutation_checks,
+    file_manager::{canonicalize, get_tmp_dir},
+    mutant::MutationResult,
+    runner::run_mutation_checks,
     test_runner::tests_successful,
 };
 use clap::Parser;
@@ -9,16 +11,26 @@ use clap::Parser;
 #[derive(Parser, Debug)]
 #[command(version, about, long_about = None)]
 struct Args {
-    /// Path to the folder containing the root Scarb.toml file
-    #[arg(short, long)]
-    path: String,
+    /// Mandatory group of any arguments
+    #[clap(flatten)]
+    group: Group,
     /// Path to the Cairo file you want to mutate
     #[arg(short, long)]
     file: Option<String>,
 }
 
+#[derive(Debug, clap::Args)]
+#[group(required = true, multiple = false)]
+pub struct Group {
+    /// Path to the folder containing the root Scarb.toml file
+    #[clap(short, long)]
+    path: Option<String>,
+    /// Used to clean the generated files after a crash
+    #[clap(short, long)]
+    clean: bool,
+}
+
 // TODO Catch ctrl-c and clean
-// TODO OPTION Add Clean command
 // TODO OPTION Which mutation to apply
 // TODO OPTION Limit threads to use?
 
@@ -26,7 +38,11 @@ struct Args {
 
 pub fn run() -> Result<&'static str, String> {
     let args = Args::parse();
-    let path = check_path(&args.path)?;
+    if args.group.clean {
+        fs::remove_dir_all(get_tmp_dir()).expect("Error while removing tmp folder");
+        return Ok("Cleaned");
+    }
+    let path = check_path(&args.group.path.unwrap())?;
     let file = check_file(&args.file, &path)?;
     run_mutation_checks(path, file)
 }

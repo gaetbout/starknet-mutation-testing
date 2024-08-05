@@ -1,3 +1,4 @@
+use std::env;
 use std::{
     fs::{self, File},
     io::{self, BufRead, BufReader, Write},
@@ -117,4 +118,8 @@ pub fn canonicalize(path: &String) -> Result<PathBuf, String> {
     } else {
         Err(format!("Invalid path '{}'", path))
     }
+}
+
+pub fn get_tmp_dir() -> PathBuf {
+    env::current_dir().expect("Couldn't access pwd").join("tmp")
 }
