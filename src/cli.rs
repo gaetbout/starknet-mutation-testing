@@ -152,6 +152,8 @@ fn s_or_nothing<T>(arr: &Vec<T>) -> &'static str {
 
 #[cfg(test)]
 mod tests {
+    use crate::Error;
+
     use super::*;
 
     #[test]
@@ -169,10 +171,10 @@ mod tests {
         assert!(check_path(&path).is_ok());
 
         let path = "./doesnotexist".to_string();
-        assert!(check_path(&path)
-            .unwrap_err()
-            .to_string()
-            .contains("Invalid path './doesnotexist'"));
+        assert_eq!(
+            check_path(&path).unwrap_err(),
+            Error::FsInvalidPath { path }
+        );
 
         let path = "./test_data/assert/Scarb.toml".to_string();
         assert!(check_path(&path)

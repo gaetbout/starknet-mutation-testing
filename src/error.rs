@@ -1,10 +1,20 @@
 use derive_more::From;
+// use derive_more::{From, Display};
 
+// TODO Should do the Display stuff?
 pub type Result<T> = core::result::Result<T, Error>;
 
-#[derive(Debug, From)]
+#[derive(Debug, From, PartialEq)] // Display
 pub enum Error {
+    // -- fs errors
+    // Display => Invalid path '{}'
+    FsInvalidPath {
+        path: String,
+    },
+    // -- cli errors
+    // -- mutation errors
     #[from]
+    // #[display("Failed to compile the mutated code")]
     Custom(String),
     Example {
         name: String,

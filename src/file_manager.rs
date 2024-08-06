@@ -1,4 +1,4 @@
-use crate::Result;
+use crate::{Error, Result};
 use std::env;
 use std::{
     fs::{self, File},
@@ -117,7 +117,7 @@ pub fn canonicalize(path: &String) -> Result<PathBuf> {
     if let Ok(path_buf) = fs::canonicalize(path) {
         Ok(path_buf)
     } else {
-        Err(format!("Invalid path '{}'", path).into())
+        Err(Error::FsInvalidPath { path: path.clone() })
     }
 }
 
