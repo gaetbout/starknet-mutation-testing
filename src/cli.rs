@@ -39,18 +39,21 @@ pub struct Group {
 pub fn run() -> Result<&'static str, String> {
     let args = Args::parse();
     if args.group.clean {
-        fs::remove_dir_all(get_tmp_dir()).expect("Error while removing tmp folder");
+        let tmp_dir = get_tmp_dir();
+        if !tmp_dir.exists() {
+            return Ok("Nothing to clean");
+        }
+        fs::remove_dir_all(tmp_dir).expect("Error while removing tmp folder");
         return Ok("Cleaned");
     }
     let path = check_path(&args.group.path.unwrap())?;
-    let file = check_file(&args.file, &path)?;
+    let file = check_file(args.file, &path)?;
     run_mutation_checks(path, file)
 }
 
 fn check_path(source_folder_path: &String) -> Result<PathBuf, String> {
     let source_folder_path = canonicalize(&source_folder_path)?;
 
-    // TODO Move all these to CLI
     if source_folder_path.is_file() {
         return Err("Path should be a folder file".to_string());
     }
@@ -68,7 +71,7 @@ fn check_path(source_folder_path: &String) -> Result<PathBuf, String> {
 }
 
 fn check_file(
-    file: &Option<String>,
+    file: Option<String>,
     source_folder_path: &PathBuf,
 ) -> Result<Option<PathBuf>, String> {
     if let Some(file) = file {
@@ -142,5 +145,52 @@ fn s_or_nothing<T>(arr: &Vec<T>) -> &'static str {
         "s"
     } else {
         ""
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_s_or_nothing() {
+        let arr = vec![1, 2, 3];
+        assert_eq!(s_or_nothing(&arr), "s");
+
+        let arr = vec![1];
+        assert_eq!(s_or_nothing(&arr), "");
+    }
+
+    #[test]
+    fn test_check_path() {
+        let path = "./test_data/assert/".to_string();
+        assert!(check_path(&path).is_ok());
+
+        let path = "./doesnotexist".to_string();
+        assert!(check_path(&path).unwrap_err() == "Invalid path './doesnotexist'");
+
+        let path = "./test_data/assert/Scarb.toml".to_string();
+        assert!(check_path(&path).unwrap_err() == "Path should be a folder file");
+    }
+
+    #[test]
+    fn test_check_file() {
+        let dst = canonicalize(&"./test_data/assert".to_string()).unwrap();
+        let path = "./test_data/assert/src/lib.cairo".to_string();
+        assert!(check_file(None, &dst).is_ok());
+        assert!(check_file(Some(path), &dst).is_ok());
+
+        let path = "./test_data".to_string();
+        assert!(check_file(Some(path), &dst)
+            .unwrap_err()
+            .contains("should be a file"));
+
+        let path = "./test_data/equal/Scarb.toml".to_string();
+        assert!(
+            check_file(Some(path), &dst).unwrap_err() == "File should be within the path folder"
+        );
+
+        let path = "./test_data/assert/Scarb.toml".to_string();
+        assert!(check_file(Some(path), &dst).unwrap_err() == "File extension should be .cairo");
     }
 }
