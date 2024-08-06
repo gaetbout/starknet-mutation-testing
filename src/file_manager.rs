@@ -1,3 +1,4 @@
+use crate::Result;
 use std::env;
 use std::{
     fs::{self, File},
@@ -112,11 +113,11 @@ pub fn change_line_content(
     Ok(())
 }
 
-pub fn canonicalize(path: &String) -> Result<PathBuf, String> {
+pub fn canonicalize(path: &String) -> Result<PathBuf> {
     if let Ok(path_buf) = fs::canonicalize(path) {
         Ok(path_buf)
     } else {
-        Err(format!("Invalid path '{}'", path))
+        Err(format!("Invalid path '{}'", path).into())
     }
 }
 

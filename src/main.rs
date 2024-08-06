@@ -2,7 +2,8 @@ use std::process;
 
 use colored::Colorize;
 mod error;
-use error::{Error, Result};
+pub use error::{Error, Result};
+
 pub mod cli;
 pub mod file_manager;
 pub mod mutant;
@@ -17,7 +18,7 @@ fn main() {
             process::exit(0);
         }
         Err(e) => {
-            println!("{}", e.red());
+            println!("{:?}", e.to_string().red());
             process::exit(1);
         }
     }

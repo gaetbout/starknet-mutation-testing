@@ -29,6 +29,7 @@ pub struct Group {
     #[clap(short, long)]
     clean: bool,
 }
+use crate::Result;
 
 // TODO Catch ctrl-c and clean
 // TODO OPTION Which mutation to apply
@@ -36,7 +37,7 @@ pub struct Group {
 
 // TODO later do an interactive CLI if missing args
 
-pub fn run() -> Result<&'static str, String> {
+pub fn run() -> Result<&'static str> {
     let args = Args::parse();
     if args.group.clean {
         let tmp_dir = get_tmp_dir();
@@ -51,43 +52,40 @@ pub fn run() -> Result<&'static str, String> {
     run_mutation_checks(path, file)
 }
 
-fn check_path(source_folder_path: &String) -> Result<PathBuf, String> {
+fn check_path(source_folder_path: &String) -> Result<PathBuf> {
     let source_folder_path = canonicalize(&source_folder_path)?;
 
     if source_folder_path.is_file() {
-        return Err("Path should be a folder file".to_string());
+        return Err("Path should be a folder file".into());
     }
 
     let scarb_toml = source_folder_path.join("Scarb.toml");
     if !scarb_toml.exists() {
-        return Err("Scarb.toml file not found".to_string());
+        return Err("Scarb.toml file not found".into());
     }
 
     // Making sure all tests pass before starting
     if !tests_successful(&source_folder_path) {
-        return Err("Tests aren't passing".to_string());
+        return Err("Tests aren't passing".into());
     }
     Ok(source_folder_path)
 }
 
-fn check_file(
-    file: Option<String>,
-    source_folder_path: &PathBuf,
-) -> Result<Option<PathBuf>, String> {
+fn check_file(file: Option<String>, source_folder_path: &PathBuf) -> Result<Option<PathBuf>> {
     if let Some(file) = file {
         let source_file_path = canonicalize(&file)?;
         if source_file_path.is_dir() {
-            return Err(format!("{:?} should be a file", source_file_path));
+            return Err(format!("{:?} should be a file", source_file_path).into());
         }
 
         // Assert file is within source_folder_path
         if !source_file_path.starts_with(source_folder_path) {
-            return Err("File should be within the path folder".to_string());
+            return Err("File should be within the path folder".into());
         }
 
         // Assert extension is Cairo
         if source_file_path.extension().unwrap() != "cairo" {
-            return Err("File extension should be .cairo".to_string());
+            return Err("File extension should be .cairo".into());
         }
         Ok(Some(source_file_path))
     } else {
@@ -95,7 +93,7 @@ fn check_file(
     }
 }
 // TODO Make this a map?
-pub fn print_result(results: Vec<MutationResult>) -> Result<&'static str, String> {
+pub fn print_result(results: Vec<MutationResult>) -> Result<&'static str> {
     // TODO Add some color in this result?
     println!(
         "Found {} mutation{}:",
@@ -136,7 +134,7 @@ pub fn print_result(results: Vec<MutationResult>) -> Result<&'static str, String
     if failures.is_empty() {
         Ok("All mutation tests passed")
     } else {
-        Err("Some mutation tests failed".to_string())
+        Err("Some mutation tests failed".into())
     }
 }
 
@@ -167,10 +165,16 @@ mod tests {
         assert!(check_path(&path).is_ok());
 
         let path = "./doesnotexist".to_string();
-        assert!(check_path(&path).unwrap_err() == "Invalid path './doesnotexist'");
+        assert!(check_path(&path)
+            .unwrap_err()
+            .to_string()
+            .contains("Invalid path './doesnotexist'"));
 
         let path = "./test_data/assert/Scarb.toml".to_string();
-        assert!(check_path(&path).unwrap_err() == "Path should be a folder file");
+        assert!(check_path(&path)
+            .unwrap_err()
+            .to_string()
+            .contains("Path should be a folder file"));
     }
 
     #[test]
@@ -183,14 +187,19 @@ mod tests {
         let path = "./test_data".to_string();
         assert!(check_file(Some(path), &dst)
             .unwrap_err()
+            .to_string()
             .contains("should be a file"));
 
         let path = "./test_data/equal/Scarb.toml".to_string();
-        assert!(
-            check_file(Some(path), &dst).unwrap_err() == "File should be within the path folder"
-        );
+        assert!(check_file(Some(path), &dst)
+            .unwrap_err()
+            .to_string()
+            .contains("File should be within the path folder"));
 
         let path = "./test_data/assert/Scarb.toml".to_string();
-        assert!(check_file(Some(path), &dst).unwrap_err() == "File extension should be .cairo");
+        assert!(check_file(Some(path), &dst)
+            .unwrap_err()
+            .to_string()
+            .contains("File extension should be .cairo"));
     }
 }

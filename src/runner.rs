@@ -1,3 +1,4 @@
+use crate::Result;
 use crate::{
     cli::print_result,
     file_manager::{collect_files_with_extension, get_tmp_dir},
@@ -14,7 +15,7 @@ use std::{
 pub fn run_mutation_checks(
     source_folder_path: PathBuf,
     file_to_check: Option<PathBuf>,
-) -> Result<&'static str, String> {
+) -> Result<&'static str> {
     let files: Vec<PathBuf> = if let Some(file) = file_to_check {
         vec![file]
     } else {
