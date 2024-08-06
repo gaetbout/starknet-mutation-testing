@@ -13,10 +13,7 @@ pub mod test_runner;
 fn main() {
     // TODO Ensure there is a Scarb cli?
     match cli::run() {
-        Ok(end_msg) => {
-            println!("{}", end_msg);
-            process::exit(0);
-        }
+        Ok(_) => process::exit(0),
         Err(e) => {
             println!("{:?}", e.to_string().red());
             process::exit(1);

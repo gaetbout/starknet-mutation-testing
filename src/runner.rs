@@ -15,7 +15,7 @@ use std::{
 pub fn run_mutation_checks(
     source_folder_path: PathBuf,
     file_to_check: Option<PathBuf>,
-) -> Result<&'static str> {
+) -> Result<()> {
     let files: Vec<PathBuf> = if let Some(file) = file_to_check {
         vec![file]
     } else {
@@ -25,7 +25,8 @@ pub fn run_mutation_checks(
     let mutations: Vec<Mutation> = collect_mutations(&source_folder_path, files);
 
     if mutations.len() == 0 {
-        return Ok("No mutations found");
+        println!("No mutations found");
+        return Ok(());
     }
     let start = SystemTime::now();
     let since_the_epoch = start
@@ -40,7 +41,6 @@ pub fn run_mutation_checks(
     print_result(results)
 }
 
-// TODO There must be a better way to return success or failure
 fn test_mutations(
     path_src: &Path,
     subfolder: String,

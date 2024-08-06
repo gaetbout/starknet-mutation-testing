@@ -37,15 +37,18 @@ use crate::Result;
 
 // TODO later do an interactive CLI if missing args
 
-pub fn run() -> Result<&'static str> {
+pub fn run() -> Result<()> {
     let args = Args::parse();
     if args.group.clean {
         let tmp_dir = get_tmp_dir();
         if !tmp_dir.exists() {
-            return Ok("Nothing to clean");
+            // TODO Turn all these println into a logger
+            println!("Nothing to clean");
+            return Ok(());
         }
         fs::remove_dir_all(tmp_dir).expect("Error while removing tmp folder");
-        return Ok("Cleaned");
+        println!("Cleaned");
+        return Ok(());
     }
     let path = check_path(&args.group.path.unwrap())?;
     let file = check_file(args.file, &path)?;
@@ -93,7 +96,7 @@ fn check_file(file: Option<String>, source_folder_path: &PathBuf) -> Result<Opti
     }
 }
 // TODO Make this a map?
-pub fn print_result(results: Vec<MutationResult>) -> Result<&'static str> {
+pub fn print_result(results: Vec<MutationResult>) -> Result<()> {
     // TODO Add some color in this result?
     println!(
         "Found {} mutation{}:",
@@ -132,7 +135,8 @@ pub fn print_result(results: Vec<MutationResult>) -> Result<&'static str> {
     // }
 
     if failures.is_empty() {
-        Ok("All mutation tests passed")
+        println!("All mutation tests passed");
+        Ok(())
     } else {
         Err("Some mutation tests failed".into())
     }

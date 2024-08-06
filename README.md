@@ -31,4 +31,8 @@ cargo run -- --help
 
 ## TODO 
  - Logger with different levels
+
+## Interesting links
+ - [How to handle Errors](https://youtu.be/j-VQCYP7wyw?si=kJgRtmUxIR5hcnIR)
+ 
 ## License
