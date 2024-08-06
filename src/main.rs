@@ -1,6 +1,5 @@
 use std::process;
 
-use colored::Colorize;
 mod error;
 pub use error::{Error, Result};
 
@@ -15,7 +14,7 @@ fn main() {
     match cli::run() {
         Ok(_) => process::exit(0),
         Err(e) => {
-            println!("{:?}", e.to_string().red());
+            eprintln!("{:?}", e);
             process::exit(1);
         }
     }
