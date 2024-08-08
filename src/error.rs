@@ -17,7 +17,7 @@ pub enum Error {
     // #[display("Failed to compile the mutated code")]
     Custom(String),
     #[from]
-    Io(std::io::Error),
+    Io(std::io::Error), // TODO Remove and map each
 }
 
 impl Error {
