@@ -16,6 +16,9 @@ struct Args {
     /// Path to the Cairo file you want to mutate
     #[arg(short, long)]
     file: Option<String>,
+    /// Maximum number of thread to use
+    #[arg(short, long)]
+    threads: Option<usize>,
 }
 
 #[derive(Debug, clap::Args)]
@@ -32,8 +35,6 @@ use crate::Result;
 
 // TODO Catch ctrl-c and clean
 // TODO OPTION Which mutation to apply
-// TODO OPTION Limit threads to use? => rayon::ThreadPoolBuilder::new().num_threads(4).build_global().unwrap();
-
 // TODO later do an interactive CLI if missing args
 
 pub fn run() -> Result<()> {
@@ -48,6 +49,12 @@ pub fn run() -> Result<()> {
         fs::remove_dir_all(tmp_dir).expect("Error while removing tmp folder");
         println!("Cleaned");
         return Ok(());
+    }
+    if let Some(threads) = args.threads {
+        rayon::ThreadPoolBuilder::new()
+            .num_threads(threads)
+            .build_global()
+            .unwrap();
     }
     let path = check_path(&args.group.path.unwrap())?;
     let file = check_file(args.file, &path)?;
