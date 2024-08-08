@@ -1,14 +1,15 @@
-use crate::Result;
 use crate::{
     cli::print_result,
     file_manager::{collect_files_with_extension, get_tmp_dir},
     mutant::{Mutation, MutationResult, MutationType},
     test_runner::{can_build, tests_successful},
+    Result,
 };
 use rayon::prelude::*;
 use std::{
     fs,
     path::{Path, PathBuf},
+    sync::atomic::{AtomicUsize, Ordering},
     time::{SystemTime, UNIX_EPOCH},
 };
 
@@ -46,28 +47,37 @@ fn test_mutations(
     subfolder: String,
     mutations: Vec<Mutation>,
 ) -> Vec<MutationResult> {
-    println!("Found {} mutations", mutations.len());
+    println!("Found {} mutations, running tests...", mutations.len());
     let path_dst = get_tmp_dir().join(subfolder);
 
+    let resolved_mutations = AtomicUsize::new(0);
+    let len = mutations.len();
     let results = mutations
-        .into_iter()
-        // .into_par_iter()
+        .into_par_iter()
         .enumerate()
         .map(|(idx, mutation)| {
             let path_dst = &path_dst.join(idx.to_string());
 
             mutation.apply_mutation(path_src, path_dst);
 
-            if !can_build(path_dst) {
-                println!("Build failed for mutation {:?}", mutation);
+            let res = if !can_build(path_dst) {
                 MutationResult::BuildFailure(mutation)
-            } else if tests_successful(path_dst) {
-                println!("Test failed for mutation {:?}", mutation);
+            } else if tests_successful(path_dst, true) {
                 MutationResult::Failure(mutation)
             } else {
-                println!("Test passed for mutation {:?}", mutation);
                 MutationResult::Success(mutation)
-            }
+            };
+
+            println!("{:?}", res);
+
+            resolved_mutations.fetch_add(1, Ordering::SeqCst);
+
+            println!(
+                "Resolved {}/{} mutations",
+                resolved_mutations.load(Ordering::SeqCst),
+                len
+            );
+            res
         })
         .collect();
     fs::remove_dir_all(path_dst).expect("Error while removing tmp folder");

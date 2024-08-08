@@ -4,6 +4,7 @@ use std::{path::Path, process::Command};
 pub fn can_build(path_dst: &Path) -> bool {
     let output = Command::new("scarb")
         .arg("build")
+        .env("SCARB_CACHE", path_dst.as_os_str())
         .current_dir(path_dst)
         .output()
         .expect("Failed to execute command");
@@ -12,12 +13,22 @@ pub fn can_build(path_dst: &Path) -> bool {
     output.status.success()
 }
 
-pub fn tests_successful(path_dst: &Path) -> bool {
-    let output = Command::new("scarb")
-        .arg("test")
-        .current_dir(path_dst)
-        .output()
-        .expect("Failed to execute command");
+// A bit ugly, let's change it later
+pub fn tests_successful(path_dst: &Path, with_env: bool) -> bool {
+    let output = if with_env {
+        Command::new("scarb")
+            .arg("test")
+            .env("SCARB_CACHE", path_dst.as_os_str())
+            .current_dir(path_dst)
+            .output()
+            .expect("Failed to execute command")
+    } else {
+        Command::new("scarb")
+            .arg("test")
+            .current_dir(path_dst)
+            .output()
+            .expect("Failed to execute command")
+    };
 
     output.status.success()
 }

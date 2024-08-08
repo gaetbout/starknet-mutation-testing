@@ -1,8 +1,10 @@
 use colored::Colorize;
 
 use crate::file_manager::{change_line_content, copy_cairo_project};
-use std::fmt;
-use std::path::{Path, PathBuf};
+use std::{
+    fmt,
+    path::{Path, PathBuf},
+};
 
 #[derive(Debug, Clone)]
 pub enum MutationType {

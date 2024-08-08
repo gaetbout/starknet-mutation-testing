@@ -1,5 +1,3 @@
-use std::{fs, path::PathBuf};
-
 use crate::{
     file_manager::{canonicalize, get_tmp_dir},
     mutant::MutationResult,
@@ -7,6 +5,7 @@ use crate::{
     test_runner::tests_successful,
 };
 use clap::Parser;
+use std::{fs, path::PathBuf};
 
 #[derive(Parser, Debug)]
 #[command(version, about, long_about = None)]
@@ -33,7 +32,7 @@ use crate::Result;
 
 // TODO Catch ctrl-c and clean
 // TODO OPTION Which mutation to apply
-// TODO OPTION Limit threads to use?
+// TODO OPTION Limit threads to use? => rayon::ThreadPoolBuilder::new().num_threads(4).build_global().unwrap();
 
 // TODO later do an interactive CLI if missing args
 
@@ -68,7 +67,7 @@ fn check_path(source_folder_path: &String) -> Result<PathBuf> {
     }
 
     // Making sure all tests pass before starting
-    if !tests_successful(&source_folder_path) {
+    if !tests_successful(&source_folder_path, false) {
         return Err("Tests aren't passing".into());
     }
     Ok(source_folder_path)
@@ -149,6 +148,25 @@ fn s_or_nothing<T>(arr: &Vec<T>) -> &'static str {
         ""
     }
 }
+
+// TODO Add a spinner while running tests
+// fn loading_animation(duration: u64) {
+//     let spinner = ['|', '/', '-', '\\'];
+//     let delay = Duration::from_millis(100); // Change this to speed up/slow down the animation
+
+//     let mut stdout = io::stdout();
+
+//     for i in 0..(duration * 10) {
+//         let i = i as usize;
+//         let frame = spinner[i % spinner.len()];
+//         print!("\r{}", frame);
+//         stdout.flush().unwrap();
+//         thread::sleep(delay);
+//     }
+
+//     print!("\r "); // Clear the spinner character after the animation
+//     stdout.flush().unwrap();
+// }
 
 #[cfg(test)]
 mod tests {

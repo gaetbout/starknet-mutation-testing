@@ -1,6 +1,6 @@
 use crate::{Error, Result};
-use std::env;
 use std::{
+    env,
     fs::{self, File},
     io::{self, BufRead, BufReader, Write},
     path::{Path, PathBuf},
