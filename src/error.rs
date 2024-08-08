@@ -4,7 +4,7 @@ use derive_more::From;
 // TODO Should do the Display stuff?
 pub type Result<T> = core::result::Result<T, Error>;
 
-#[derive(Debug, From, PartialEq)] // Display
+#[derive(Debug, From)] // Display
 pub enum Error {
     // -- fs errors
     // Display => Invalid path '{}'
@@ -16,9 +16,8 @@ pub enum Error {
     #[from]
     // #[display("Failed to compile the mutated code")]
     Custom(String),
-    Example {
-        name: String,
-    },
+    #[from]
+    Io(std::io::Error),
 }
 
 impl Error {
@@ -34,7 +33,9 @@ impl From<&str> for Error {
 }
 
 impl core::fmt::Display for Error {
-    fn fmt(&self, f: &mut core::fmt::Formatter) -> core::fmt::Result {
+    fn fmt(&self, f: &mut core::fmt::Formatter) -> core::result::Result<(), core::fmt::Error> {
         write!(f, "{:?}", self)
     }
 }
+
+impl std::error::Error for Error {}

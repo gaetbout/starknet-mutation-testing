@@ -42,7 +42,7 @@ pub fn run() -> Result<()> {
     if args.group.clean {
         let tmp_dir = get_tmp_dir();
         if !tmp_dir.exists() {
-            // TODO Turn all these println into a logger
+            // TODO Turn all these println into a logger https://docs.rs/log/latest/log/
             println!("Nothing to clean");
             return Ok(());
         }
@@ -177,8 +177,6 @@ fn s_or_nothing<T>(arr: &Vec<T>) -> &'static str {
 
 #[cfg(test)]
 mod tests {
-    use crate::Error;
-
     use super::*;
 
     #[test]
@@ -196,10 +194,7 @@ mod tests {
         assert!(check_path(&path).is_ok());
 
         let path = "./doesnotexist".to_string();
-        assert_eq!(
-            check_path(&path).unwrap_err(),
-            Error::FsInvalidPath { path }
-        );
+        assert!(check_path(&path).is_err());
 
         let path = "./test_data/assert/Scarb.toml".to_string();
         assert!(check_path(&path)

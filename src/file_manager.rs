@@ -2,14 +2,14 @@ use crate::{Error, Result};
 use std::{
     env,
     fs::{self, File},
-    io::{self, BufRead, BufReader, Write},
+    io::{BufRead, BufReader, Write},
     path::{Path, PathBuf},
 };
 
 pub fn collect_files_with_extension(
     folder_path: &Path,
     file_extension: &str,
-) -> io::Result<Vec<PathBuf>> {
+) -> Result<Vec<PathBuf>> {
     let mut files: Vec<PathBuf> = Vec::new();
 
     // Read the directory
@@ -34,7 +34,7 @@ pub fn collect_files_with_extension(
     Ok(files)
 }
 
-pub fn copy_cairo_project(src: &Path, dst: &Path) -> io::Result<()> {
+pub fn copy_cairo_project(src: &Path, dst: &Path) -> Result<()> {
     if !dst.exists() {
         fs::create_dir_all(dst)?;
     }
@@ -54,7 +54,7 @@ pub fn copy_cairo_project(src: &Path, dst: &Path) -> io::Result<()> {
     Ok(())
 }
 
-fn copy_all_cairo(src: &Path, dst: &Path) -> io::Result<()> {
+fn copy_all_cairo(src: &Path, dst: &Path) -> Result<()> {
     if !dst.exists() {
         fs::create_dir_all(dst)?;
     }
@@ -79,11 +79,7 @@ fn copy_all_cairo(src: &Path, dst: &Path) -> io::Result<()> {
     Ok(())
 }
 
-pub fn change_line_content(
-    file_path: &Path,
-    line_number: usize,
-    new_content: &str,
-) -> io::Result<()> {
+pub fn change_line_content(file_path: &Path, line_number: usize, new_content: &str) -> Result<()> {
     // Open the file for reading
     let file = File::open(file_path)?;
     let reader = BufReader::new(file);
@@ -104,10 +100,7 @@ pub fn change_line_content(
             writeln!(file, "{}", line)?;
         }
     } else {
-        return Err(io::Error::new(
-            io::ErrorKind::InvalidInput,
-            "Invalid line number",
-        ));
+        return Err("Invalid line number".into());
     }
 
     Ok(())
