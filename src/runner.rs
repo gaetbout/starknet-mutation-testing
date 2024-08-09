@@ -23,7 +23,21 @@ pub fn run_mutation_checks(
         collect_files_with_extension(&source_folder_path.join("src"), "cairo")
             .expect("Couldn't collect files")
     };
-    let mutations: Vec<Mutation> = collect_mutations(&source_folder_path, files);
+
+    let mutations_to_check: [MutationType; 9] = [
+        MutationType::Equal,
+        MutationType::NotEqual,
+        MutationType::GreaterThan,
+        MutationType::GreaterThanOrEqual,
+        MutationType::LessThan,
+        MutationType::LessThanOrEqual,
+        MutationType::Assert,
+        MutationType::IsZero,
+        MutationType::IsNonZero,
+    ];
+
+    let mutations: Vec<Mutation> =
+        collect_mutations(&source_folder_path, files, mutations_to_check.into());
 
     if mutations.len() == 0 {
         println!("No mutations found");
@@ -84,18 +98,11 @@ fn test_mutations(
     results
 }
 
-fn collect_mutations(path_src: &Path, files: Vec<PathBuf>) -> Vec<Mutation> {
-    let mutations_to_check = [
-        MutationType::Equal,
-        MutationType::NotEqual,
-        MutationType::GreaterThan,
-        MutationType::GreaterThanOrEqual,
-        MutationType::LessThan,
-        MutationType::LessThanOrEqual,
-        MutationType::Assert,
-        MutationType::IsZero,
-        MutationType::IsNonZero,
-    ];
+fn collect_mutations(
+    path_src: &Path,
+    files: Vec<PathBuf>,
+    mutations_to_check: Vec<MutationType>,
+) -> Vec<Mutation> {
     let mut mutations: Vec<Mutation> = Vec::new();
 
     // TODO Transform this into a map + collect
@@ -120,27 +127,31 @@ fn collect_mutations(path_src: &Path, files: Vec<PathBuf>) -> Vec<Mutation> {
 
 #[cfg(test)]
 mod tests {
-    use crate::file_manager::collect_files_with_extension;
+    use crate::{file_manager::collect_files_with_extension, mutant::MutationType};
 
     use super::{collect_mutations, test_mutations, Mutation, MutationResult};
     use rstest::rstest;
     use std::path::Path;
 
     #[rstest]
-    #[case("equal", 1)]
-    #[case("notEqual", 1)]
-    #[case("greaterThan", 2)]
-    #[case("greaterThanOrEqual", 2)]
-    #[case("lessThan", 2)]
-    #[case("lessThanOrEqual", 2)]
-    #[case("assert", 1)]
-    #[case("isZero", 2)]
-    #[case("isNonZero", 2)]
-    fn test_success(#[case] folder: String, #[case] len: usize) {
+    #[case("equal", 1, MutationType::Equal)]
+    #[case("notEqual", 1, MutationType::NotEqual)]
+    #[case("greaterThan", 2, MutationType::GreaterThan)]
+    #[case("greaterThanOrEqual", 2, MutationType::GreaterThanOrEqual)]
+    #[case("lessThan", 2, MutationType::LessThan)]
+    #[case("lessThanOrEqual", 2, MutationType::LessThanOrEqual)]
+    #[case("assert", 1, MutationType::Assert)]
+    #[case("isZero", 1, MutationType::IsZero)]
+    #[case("isNonZero", 1, MutationType::IsNonZero)]
+    fn test_success(
+        #[case] folder: String,
+        #[case] len: usize,
+        #[case] mutation_to_check: MutationType,
+    ) {
         let path_src = Path::new("test_data").join(folder.clone());
         let files = collect_files_with_extension(&path_src.join("src"), "cairo")
             .expect("Couldn't collect files");
-        let mutations: Vec<Mutation> = collect_mutations(&path_src, files);
+        let mutations: Vec<Mutation> = collect_mutations(&path_src, files, vec![mutation_to_check]);
         let dst = format!("tests/{}", folder);
         let result = test_mutations(path_src.as_path(), dst, mutations);
         assert_eq!(result.len(), len);
@@ -150,20 +161,24 @@ mod tests {
     }
 
     #[rstest]
-    #[case("equalFail", 1)]
-    #[case("notEqualFail", 1)]
-    #[case("greaterThanFail", 2)]
-    #[case("greaterThanOrEqualFail", 2)]
-    #[case("lessThanFail", 2)]
-    #[case("lessThanOrEqualFail", 2)]
-    #[case("assertFail", 1)]
-    #[case("isZeroFail", 2)]
-    #[case("isNonZeroFail", 2)]
-    fn test_failure(#[case] folder: String, #[case] len: usize) {
+    #[case("equalFail", 1, MutationType::Equal)]
+    #[case("notEqualFail", 1, MutationType::NotEqual)]
+    #[case("greaterThanFail", 2, MutationType::GreaterThan)]
+    #[case("greaterThanOrEqualFail", 2, MutationType::GreaterThanOrEqual)]
+    #[case("lessThanFail", 2, MutationType::LessThan)]
+    #[case("lessThanOrEqualFail", 2, MutationType::LessThanOrEqual)]
+    #[case("assertFail", 1, MutationType::Assert)]
+    #[case("isZeroFail", 1, MutationType::IsZero)]
+    #[case("isNonZeroFail", 1, MutationType::IsNonZero)]
+    fn test_failure(
+        #[case] folder: String,
+        #[case] len: usize,
+        #[case] mutation_to_check: MutationType,
+    ) {
         let path_src = Path::new("test_data").join(folder.clone());
         let files = collect_files_with_extension(&path_src.join("src"), "cairo")
             .expect("Couldn't collect files");
-        let mutations: Vec<Mutation> = collect_mutations(&path_src, files);
+        let mutations: Vec<Mutation> = collect_mutations(&path_src, files, vec![mutation_to_check]);
         let dst = format!("tests/{}", folder);
         let result = test_mutations(path_src.as_path(), dst, mutations);
         assert_eq!(result.len(), len);
