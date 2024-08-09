@@ -20,3 +20,5 @@ jobs:
       run: cargo build
     - name: Run format
       run: cargo +nightly fmt --check 
+    - name: Installing nightly
+      run: rustup toolchain install nightly
