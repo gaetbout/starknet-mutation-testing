@@ -19,6 +19,18 @@ Mutation testing is a software testing technique used to evaluate the quality an
 test = "snforge test"
   ```
 
+## Limitation
+At the moment only one line mutation are supported. For example if you have an `assert(...)` spread on multiple lines, it won't be modified.
+
+## Mutation supported
+ - `==` => `!=`
+ - `!=` => `==`
+ - ` > ` => `>=`, ` < `
+ - `>=` => `==`, ` > `
+ - ` < ` => `<=`, ` > `
+ - `<=` => `==`, ` < `
+ - `assert()` => Commented
+ 
 ## Usage 
 
 Clone this repository and run:
@@ -43,8 +55,6 @@ For more information about all available options, run:
 cargo run -- --help
 ```
 
-## TODO
- - Implement a logger with different levels.
 ## Interesting Links
  - [How to handle Errors](https://youtu.be/j-VQCYP7wyw?si=kJgRtmUxIR5hcnIR)
 
