@@ -16,6 +16,13 @@ pub enum MutationType {
     LessThanOrEqual,
     Assert,
     Comment,
+    //is_zero => is_non_zero
+    // assert!(), assert_eq!(), etc
+    // &&, ||
+    // +=, *=
+    // Move default value
+    // Comment event
+    // Chop assert message?
 }
 
 #[derive(Debug)]
