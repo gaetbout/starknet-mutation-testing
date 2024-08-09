@@ -16,7 +16,8 @@ pub enum MutationType {
     LessThanOrEqual,
     Assert,
     Comment,
-    //is_zero => is_non_zero
+    IsZero,
+    IsNonZero,
     // assert!(), assert_eq!(), etc
     // &&, ||
     // +=, *=
@@ -80,6 +81,8 @@ impl MutationType {
             MutationType::LessThanOrEqual => "<=",
             MutationType::Assert => "assert(",
             MutationType::Comment => "//",
+            MutationType::IsZero => "is_zero()",
+            MutationType::IsNonZero => "is_non_zero()",
         }
     }
 
@@ -93,7 +96,7 @@ impl MutationType {
         let comment_idx = line.find("//").unwrap_or(1000000000000);
         // If the mutation is in a comment, ignore it
         if comment_idx < self_idx {
-            println!("Mutation found in a comment: {}", line);
+            // println!("Mutation found in a comment: {}", line);
             return vec![];
         }
 
@@ -200,6 +203,21 @@ impl MutationType {
             MutationType::Comment => {
                 panic!("Comment mutation should not be used");
             }
+
+            MutationType::IsZero => vec![Mutation {
+                from: self.clone(),
+                to: MutationType::IsNonZero,
+                file_name,
+                line,
+                pos,
+            }],
+            MutationType::IsNonZero => vec![Mutation {
+                from: self.clone(),
+                to: MutationType::IsZero,
+                file_name,
+                line,
+                pos,
+            }],
         }
     }
 }

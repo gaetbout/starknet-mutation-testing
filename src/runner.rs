@@ -93,6 +93,8 @@ fn collect_mutations(path_src: &Path, files: Vec<PathBuf>) -> Vec<Mutation> {
         MutationType::LessThan,
         MutationType::LessThanOrEqual,
         MutationType::Assert,
+        MutationType::IsZero,
+        MutationType::IsNonZero,
     ];
     let mut mutations: Vec<Mutation> = Vec::new();
 
@@ -132,6 +134,8 @@ mod tests {
     #[case("lessThan", 2)]
     #[case("lessThanOrEqual", 2)]
     #[case("assert", 1)]
+    #[case("isZero", 2)]
+    #[case("isNonZero", 2)]
     fn test_success(#[case] folder: String, #[case] len: usize) {
         let path_src = Path::new("test_data").join(folder.clone());
         let files = collect_files_with_extension(&path_src.join("src"), "cairo")
@@ -139,7 +143,7 @@ mod tests {
         let mutations: Vec<Mutation> = collect_mutations(&path_src, files);
         let dst = format!("tests/{}", folder);
         let result = test_mutations(path_src.as_path(), dst, mutations);
-        assert!(result.len() == len);
+        assert_eq!(result.len(), len);
         result.iter().for_each(|r| {
             assert!(matches!(r, MutationResult::Success(_)));
         });
@@ -153,6 +157,8 @@ mod tests {
     #[case("lessThanFail", 2)]
     #[case("lessThanOrEqualFail", 2)]
     #[case("assertFail", 1)]
+    #[case("isZeroFail", 2)]
+    #[case("isNonZeroFail", 2)]
     fn test_failure(#[case] folder: String, #[case] len: usize) {
         let path_src = Path::new("test_data").join(folder.clone());
         let files = collect_files_with_extension(&path_src.join("src"), "cairo")
@@ -160,7 +166,7 @@ mod tests {
         let mutations: Vec<Mutation> = collect_mutations(&path_src, files);
         let dst = format!("tests/{}", folder);
         let result = test_mutations(path_src.as_path(), dst, mutations);
-        assert!(result.len() == len);
+        assert_eq!(result.len(), len);
         result.iter().for_each(|r| {
             assert!(matches!(r, MutationResult::Failure(_)));
         });
