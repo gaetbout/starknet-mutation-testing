@@ -18,7 +18,7 @@ jobs:
     - uses: actions/checkout@v4
     - name: Build
       run: cargo build
-    - name: Run format
-      run: cargo +nightly fmt --check 
     - name: Installing nightly
       run: rustup toolchain install nightly
+    - name: Run format
+      run: cargo +nightly fmt --check 
