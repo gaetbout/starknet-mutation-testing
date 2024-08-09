@@ -18,8 +18,9 @@ pub enum MutationType {
     Comment,
     IsZero,
     IsNonZero,
+    And,
+    Or,
     // assert!(), assert_eq!(), etc
-    // &&, ||
     // +=, *=
     // Move default value
     // Comment event
@@ -83,6 +84,8 @@ impl MutationType {
             MutationType::Comment => "//",
             MutationType::IsZero => "is_zero()",
             MutationType::IsNonZero => "is_non_zero()",
+            MutationType::And => " && ",
+            MutationType::Or => " || ",
         }
     }
 
@@ -214,6 +217,20 @@ impl MutationType {
             MutationType::IsNonZero => vec![Mutation {
                 from: self.clone(),
                 to: MutationType::IsZero,
+                file_name,
+                line,
+                pos,
+            }],
+            MutationType::And => vec![Mutation {
+                from: self.clone(),
+                to: MutationType::Or,
+                file_name,
+                line,
+                pos,
+            }],
+            MutationType::Or => vec![Mutation {
+                from: self.clone(),
+                to: MutationType::And,
                 file_name,
                 line,
                 pos,

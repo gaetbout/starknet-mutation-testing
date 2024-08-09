@@ -23,13 +23,14 @@ test = "snforge test"
 At the moment only one line mutation are supported. For example if you have an `assert(...)` spread on multiple lines, it won't be modified.
 
 ## Mutation supported
- - `==` => `!=`
- - `!=` => `==`
+ - `==` <=> `!=`
  - ` > ` => `>=`, ` < `
  - `>=` => `==`, ` > `
  - ` < ` => `<=`, ` > `
  - `<=` => `==`, ` < `
  - `assert()` => Commented
+ - ` && ` <=> ` || `
+ - `is_zero` => `is_non_zero`
  
 ## Usage 
 

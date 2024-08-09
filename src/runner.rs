@@ -24,7 +24,7 @@ pub fn run_mutation_checks(
             .expect("Couldn't collect files")
     };
 
-    let mutations_to_check: [MutationType; 9] = [
+    let mutations_to_check: Vec<MutationType> = [
         MutationType::Equal,
         MutationType::NotEqual,
         MutationType::GreaterThan,
@@ -34,10 +34,13 @@ pub fn run_mutation_checks(
         MutationType::Assert,
         MutationType::IsZero,
         MutationType::IsNonZero,
-    ];
+        MutationType::And,
+        MutationType::Or,
+    ]
+    .into();
 
     let mutations: Vec<Mutation> =
-        collect_mutations(&source_folder_path, files, mutations_to_check.into());
+        collect_mutations(&source_folder_path, files, mutations_to_check);
 
     if mutations.len() == 0 {
         println!("No mutations found");
@@ -143,6 +146,8 @@ mod tests {
     #[case("assert", 1, MutationType::Assert)]
     #[case("isZero", 1, MutationType::IsZero)]
     #[case("isNonZero", 1, MutationType::IsNonZero)]
+    #[case("and", 1, MutationType::And)]
+    #[case("or", 1, MutationType::Or)]
     fn test_success(
         #[case] folder: String,
         #[case] len: usize,
@@ -170,6 +175,8 @@ mod tests {
     #[case("assertFail", 1, MutationType::Assert)]
     #[case("isZeroFail", 1, MutationType::IsZero)]
     #[case("isNonZeroFail", 1, MutationType::IsNonZero)]
+    #[case("andFail", 1, MutationType::And)]
+    #[case("orFail", 1, MutationType::Or)]
     fn test_failure(
         #[case] folder: String,
         #[case] len: usize,
